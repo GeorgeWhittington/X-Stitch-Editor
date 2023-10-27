@@ -1,3 +1,6 @@
 [submodule "nanogui"]
 	path = nanogui
 	url = https://github.com/mitsuba-renderer/nanogui.git
+[submodule "ext/nanogui"]
+	path = ext/nanogui
+	url = https://github.com/mitsuba-renderer/nanogui.git
