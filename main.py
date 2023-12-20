@@ -1,7 +1,7 @@
 import gc
 
 import nanogui
-from objects import XStitchEditorApp
+from app import XStitchEditorApp
 
 if __name__ == "__main__":
     nanogui.init()

@@ -1,6 +1,8 @@
+import time
+
 import nanogui
 
-from objects import MANUFACTURERS, Thread
+from app import MANUFACTURERS, Thread, CanvasRenderer
 
 
 class LargeIconTheme(nanogui.Theme):
@@ -27,12 +29,21 @@ class PaletteButton(nanogui.Button):
 
 
 class XStitchEditorApp(nanogui.Screen):
-    def __init__(self):
-        super(XStitchEditorApp, self).__init__((1024, 768), "X Stitch Editor")
+    ORIGINAL_WIDTH = 1024
+    ORIGINAL_HEIGHT = 748
 
+    def __init__(self):
+        super(XStitchEditorApp, self).__init__((self.ORIGINAL_WIDTH, self.ORIGINAL_HEIGHT), "X Stitch Editor")
+
+        # gui options
         self.selected_thread = None
         self.selected_tool = None
+
         self.initialised = False
+        self.shader = None
+        self.canvas_renderer = CanvasRenderer(self, 20, 20)
+        self.last_frame = 0.0
+        self.delta_time = 0.0
 
         large_icon_theme = LargeIconTheme(self.nvg_context())
         self.set_theme(large_icon_theme)
@@ -103,6 +114,7 @@ class XStitchEditorApp(nanogui.Screen):
             nanogui.Label(palette_widget, f"{thread.description} - {thread.number}", "sans")
             PaletteButton(palette_widget, thread, self)
 
+        # ----------------- UI LAYOUT COMPLETE ------------------
         self.perform_layout()
         self.initialised = True
         # TODO: fix layout jumping when selected thread is changed by saving the dimensions
@@ -120,11 +132,54 @@ class XStitchEditorApp(nanogui.Screen):
         self.selected_thread_widget.set_visible(True)
         self.perform_layout()
 
+    def draw_contents(self):
+        # Keep movement consistent with framerate
+        current_frame = time.time()
+        self.delta_time = current_frame - self.last_frame
+        self.last_frame = current_frame
+
+        self.canvas_renderer.render()
+
     def keyboard_event(self, key, scancode, action, modifiers):
         if super(XStitchEditorApp, self).keyboard_event(key, scancode,
                                                         action, modifiers):
             return True
+
         if key == nanogui.glfw.KEY_ESCAPE and action == nanogui.glfw.PRESS:
             self.set_visible(False)
             return True
+
+        camera_speed = 2.5 * self.delta_time
+
+        if key == nanogui.glfw.KEY_LEFT:
+            self.canvas_renderer.translation_x += camera_speed
+        if key == nanogui.glfw.KEY_RIGHT:
+            self.canvas_renderer.translation_x -= camera_speed
+        if key == nanogui.glfw.KEY_UP:
+            self.canvas_renderer.translation_y -= camera_speed
+        if key == nanogui.glfw.KEY_DOWN:
+            self.canvas_renderer.translation_y += camera_speed
+
+        if key == nanogui.glfw.KEY_EQUAL and modifiers == nanogui.glfw.MOD_SHIFT:
+            # TODO: center zoom on current screen center
+
+            # 1) calculate position currently at center
+            # 2) perform zoom
+            # 3) find difference between new center and old center
+            # 4) translate by this amount
+            self.canvas_renderer.zoom += self.delta_time * 2
+        if key == nanogui.glfw.KEY_MINUS and modifiers == nanogui.glfw.MOD_SHIFT:
+            self.canvas_renderer.zoom -= self.delta_time * 2
+
+        return False
+
+    def scroll_event(self, mouse_position, delta):
+        if super(XStitchEditorApp, self).scroll_event(mouse_position, delta):
+            return True
+
+        # We only care about vertical scroll
+        if delta[1]:
+            self.canvas_renderer.zoom += delta[1] * self.delta_time
+
+        print(f"scroll event: {mouse_position}, {delta}")
         return False
