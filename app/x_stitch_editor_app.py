@@ -1,8 +1,9 @@
 import time
+import sys
 
 import nanogui
 
-from app import MANUFACTURERS, Thread, CanvasRenderer
+from app import MANUFACTURERS, Thread, CanvasRenderer, GLOBAL_THREAD_LOOKUP
 
 
 class LargeIconTheme(nanogui.Theme):
@@ -11,21 +12,12 @@ class LargeIconTheme(nanogui.Theme):
         self.m_icon_scale = 0.9
 
 
-class PaletteButton(nanogui.Button):
-    def __init__(self, ctx, thread: Thread, app: "XStitchEditorApp"):
-        super(PaletteButton, self).__init__(ctx, caption="  ")
-        self.thread_colour = thread
-        self.app = app
-        self.set_background_color(nanogui.Color(*thread.colour))
-        self.set_callback(self.thread_colour_callback)
+class DisabledButton(nanogui.Button):
+    def mouse_button_event(self, *_):
+        return False
 
-    def thread_colour_callback(self):
-        # For some godforsaken reason, callbacks are called on instantiation,
-        # this just makes sure buttons aren't pressed before the ui has first rendered
-        if not self.app.initialised:
-            return
-        self.app.selected_thread = self.thread_colour
-        self.app.update_selected_thread_widget()
+    def mouse_enter_event(self, *_):
+        return False
 
 
 class XStitchEditorApp(nanogui.Screen):
@@ -39,70 +31,97 @@ class XStitchEditorApp(nanogui.Screen):
         self.selected_thread = None
         self.selected_tool = None
 
-        self.initialised = False
         self.shader = None
-        self.canvas_renderer = CanvasRenderer(self, 20, 20)
+        self.canvas_renderer = None
         self.last_frame = 0.0
         self.delta_time = 0.0
+
+        # TODO: this should be initialised either by the user creating a new canvas
+        # or loading an existing project.
+        self.canvas_renderer = CanvasRenderer(self, 100, 100)
 
         large_icon_theme = LargeIconTheme(self.nvg_context())
         self.set_theme(large_icon_theme)
 
-        window = nanogui.Window(self, "Tools")
-        window.set_position((0, 0))
-        window.set_layout(nanogui.GroupLayout(
+        self.tool_window = nanogui.Window(self, "Tools")
+        self.tool_window.set_position((0, 0))
+        self.tool_window.set_layout(nanogui.GroupLayout(
             margin=5, spacing=5, group_spacing=10, group_indent=0))
 
         # Drawing Tools
-        nanogui.Label(window, "Drawing Tools", "sans-bold")
-        tools = nanogui.Widget(window)
-        tools.set_layout(nanogui.BoxLayout(
-            nanogui.Orientation.Horizontal,
-            nanogui.Alignment.Middle, margin=0, spacing=6))
+        nanogui.Label(self.tool_window, "Tools", "sans-bold")
+        tool_wrapper = nanogui.Widget(self.tool_window)
+        tool_wrapper.set_layout(nanogui.BoxLayout(
+            orientation=nanogui.Orientation.Horizontal,
+            alignment=nanogui.Alignment.Fill, margin=0, spacing=0))
 
-        def single_stitch_callback():
-            self.selected_tool = "SINGLE_STITCH"
+        tools = nanogui.Widget(tool_wrapper)
+        tool_layout = nanogui.GridLayout(
+            orientation=nanogui.Orientation.Horizontal, resolution=5,
+            alignment=nanogui.Alignment.Fill, margin=0, spacing=0)
+        tool_layout.set_spacing(0, 5)
+        tools.set_layout(tool_layout)
 
-        def back_stitch_callback():
-            self.selected_tool = "BACK_STITCH"
+        def make_tool_button_callback(tool, cursor=nanogui.Cursor.Arrow):
+            def callback():
+                self.selected_tool = tool
+                self.set_cursor(cursor)
+            return callback
 
-        def brush_callback():
-            self.selected_tool = "BRUSH"
+        toolbutton = nanogui.ToolButton(tools, nanogui.icons.FA_HAND_PAPER)
+        toolbutton.set_tooltip("Move")
+        toolbutton.set_callback(make_tool_button_callback("MOVE", nanogui.Cursor.Hand))
+        toolbutton.set_pushed(True)
+        self.selected_tool = "MOVE"
+        self.set_cursor(nanogui.Cursor.Hand)
 
         toolbutton = nanogui.ToolButton(tools, nanogui.icons.FA_PENCIL_ALT)
         toolbutton.set_tooltip("Single Stitch")
-        toolbutton.set_callback(single_stitch_callback)
+        toolbutton.set_callback(make_tool_button_callback("SINGLE_STITCH"))
 
         toolbutton = nanogui.ToolButton(tools, nanogui.icons.FA_PEN_NIB)
         toolbutton.set_tooltip("Back Stitch")
-        toolbutton.set_callback(back_stitch_callback)
+        toolbutton.set_callback(make_tool_button_callback("BACK_STITCH", nanogui.Cursor.Crosshair))
 
-        toolbutton = nanogui.ToolButton(tools, nanogui.icons.FA_PAINT_BRUSH)
-        toolbutton.set_tooltip("Brush")
-        toolbutton.set_callback(brush_callback)
+        toolbutton = nanogui.ToolButton(tools, nanogui.icons.FA_ERASER)
+        toolbutton.set_tooltip("Erase")
+        toolbutton.set_callback(make_tool_button_callback("ERASE"))
 
-        # TODO: Eraser
+        toolbutton = nanogui.ToolButton(tools, nanogui.icons.FA_FILL_DRIP)
+        toolbutton.set_tooltip("Fill Area")
+        toolbutton.set_callback(make_tool_button_callback("FILL", nanogui))
+
+        toolbutton = nanogui.ToolButton(tools, nanogui.icons.FA_SEARCH_PLUS)
+        toolbutton.set_tooltip("Zoom In")
+        toolbutton.set_callback(make_tool_button_callback("ZOOM_IN", nanogui.Cursor.VResize))
+
+        toolbutton = nanogui.ToolButton(tools, nanogui.icons.FA_SEARCH_MINUS)
+        toolbutton.set_tooltip("Zoom Out")
+        toolbutton.set_callback(make_tool_button_callback("ZOOM_OUT", nanogui.Cursor.VResize))
 
         # Palette
-        nanogui.Label(window, "Palette", "sans-bold")
+        self.selected_thread_title = nanogui.Label(self.tool_window, "Selected Thread", "sans-bold")
 
-        self.selected_thread_widget = nanogui.Widget(window)
+        self.selected_thread_widget = nanogui.Widget(self.tool_window)
         self.selected_thread_widget.set_layout(nanogui.BoxLayout(
-            nanogui.Orientation.Horizontal, nanogui.Alignment.Maximum,
-            margin=5, spacing=5))
-        self.selected_thread_label = nanogui.Label(self.selected_thread_widget, "Selected Thread: ")
-        self.selected_thread_button = nanogui.Button(self.selected_thread_widget, "  ")
-        # TODO: figure out how to disable this button (mouse_button_event?)
+            orientation=nanogui.Orientation.Horizontal,
+            alignment=nanogui.Alignment.Maximum, margin=0, spacing=5))
 
-        self.selected_thread_widget.set_visible(False)
+        self.selected_thread_button = DisabledButton(self.selected_thread_widget, "")
+        self.selected_thread_label = nanogui.Label(self.selected_thread_widget, "")
+        self.update_selected_thread_widget()
 
-        v_scroll = nanogui.VScrollPanel(window)
-        v_scroll.set_fixed_size((0, 490))
+        nanogui.Label(self.tool_window, "Palette", "sans-bold")
+
+        v_scroll = nanogui.VScrollPanel(self.tool_window)
+        v_scroll.set_fixed_size((0, 470))
 
         palette_widget = nanogui.Widget(v_scroll)
-        palette_widget.set_layout(nanogui.GridLayout(
-            orientation=nanogui.Orientation.Horizontal, resolution=2,
-            alignment=nanogui.Alignment.Maximum, margin=5, spacing=5))
+        palette_layout = nanogui.GridLayout(
+            orientation=nanogui.Orientation.Horizontal, resolution=3,
+            alignment=nanogui.Alignment.Maximum, margin=0, spacing=5)
+        palette_layout.set_col_alignment([nanogui.Alignment.Minimum, nanogui.Alignment.Minimum, nanogui.Alignment.Maximum])
+        palette_widget.set_layout(palette_layout)
 
         # TODO: Load this from a setting
         selected_palette = None
@@ -110,27 +129,45 @@ class XStitchEditorApp(nanogui.Screen):
             selected_palette = p
             break
 
-        for thread in selected_palette.values():
-            nanogui.Label(palette_widget, f"{thread.description} - {thread.number}", "sans")
-            PaletteButton(palette_widget, thread, self)
+        def make_palette_button_callback(thread):
+            def callback():
+                self.selected_thread = thread
+                self.update_selected_thread_widget()
+            return callback
 
-        # ----------------- UI LAYOUT COMPLETE ------------------
+        nanogui.Label(palette_widget, "Company", "sans")
+        nanogui.Label(palette_widget, "Code", "sans")
+        nanogui.Label(palette_widget, "")
+
+        for thread in selected_palette.values():
+            nanogui.Label(palette_widget, thread.company, "sans")
+            nanogui.Label(palette_widget, thread.number, "sans")
+
+            pb = nanogui.Button(palette_widget, "  ")
+            pb.set_background_color(nanogui.Color(*thread.colour))
+            pb.set_callback(make_palette_button_callback(thread))
+            pb.set_tooltip(thread.description)
+
+        # TODO: switch/edit palette button that launches a popup to do so?
+
+        self.mouse_pos_window = nanogui.Window(self, "")
+        self.mouse_pos_window.set_layout(nanogui.GroupLayout(
+            margin=5, spacing=5, group_spacing=0, group_indent=0))
+        self.mouse_location_label = nanogui.Label(self.mouse_pos_window, "")
+        self.mouse_location_label_2 = nanogui.Label(self.mouse_pos_window, "")
+        self.mouse_pos_window.set_visible(False)
+
         self.perform_layout()
-        self.initialised = True
-        # TODO: fix layout jumping when selected thread is changed by saving the dimensions
-        # calculated here and enforcing them
 
     def update_selected_thread_widget(self):
         if self.selected_thread is None:
-            self.selected_thread_widget.set_visible(False)
-            self.perform_layout()
-            return
-
-        self.selected_thread_label.set_caption(f"Selected Thread: {self.selected_thread.description} - {self.selected_thread.number}")
-        self.selected_thread_button.set_background_color(nanogui.Color(*self.selected_thread.colour))
-
-        self.selected_thread_widget.set_visible(True)
-        self.perform_layout()
+            self.selected_thread_button.set_icon(nanogui.icons.FA_BAN)
+            self.selected_thread_button.set_caption("")
+        else:
+            self.selected_thread_button.set_icon(0)
+            self.selected_thread_label.set_caption(self.selected_thread.number)
+            self.selected_thread_button.set_background_color(nanogui.Color(*self.selected_thread.colour))
+            self.selected_thread_button.set_caption("  ")
 
     def draw_contents(self):
         # Keep movement consistent with framerate
@@ -138,7 +175,35 @@ class XStitchEditorApp(nanogui.Screen):
         self.delta_time = current_frame - self.last_frame
         self.last_frame = current_frame
 
+        if self.canvas_renderer is None:
+            super(XStitchEditorApp, self).draw_contents()
+            return
+
         self.canvas_renderer.render()
+
+        if self.canvas_renderer.mouse_position:
+            stitch_x, stitch_y = self.canvas_renderer.mouse_position
+            colour = GLOBAL_THREAD_LOOKUP.get(self.canvas_renderer.data[stitch_x, stitch_y], None)
+            _, frame_height = self.framebuffer_size()
+            if colour:
+                self.mouse_location_label.set_caption(f"stitch selected: {stitch_x + 1}, {stitch_y + 1}")
+                self.mouse_location_label_2.set_caption(f"thread: {colour.company} {colour.number}")
+                self.mouse_pos_window.set_position((0, int((frame_height / self.pixel_ratio()) - 42)))
+            else:
+                self.mouse_location_label.set_caption(f"stitch selected: {stitch_x + 1}, {stitch_y + 1}")
+                self.mouse_location_label_2.set_caption("")
+                self.mouse_pos_window.set_position((0, int((frame_height / self.pixel_ratio()) - 26)))
+            self.mouse_pos_window.set_visible(True)
+        else:
+            self.mouse_pos_window.set_visible(False)
+        self.perform_layout()
+
+    def over_tool_window(self, x, y):
+        control_x, control_y = self.tool_window.absolute_position()
+        control_width, control_height = self.tool_window.size()
+
+        return x >= control_x and y >= control_y and \
+               x <= control_x + control_width and y <= control_y + control_height
 
     def keyboard_event(self, key, scancode, action, modifiers):
         if super(XStitchEditorApp, self).keyboard_event(key, scancode,
@@ -149,27 +214,27 @@ class XStitchEditorApp(nanogui.Screen):
             self.set_visible(False)
             return True
 
-        camera_speed = 2.5 * self.delta_time
+        if self.canvas_renderer is None:
+            return False
+
+        camera = self.canvas_renderer.camera
+        camera_speed = 2 * self.delta_time
 
         if key == nanogui.glfw.KEY_LEFT:
-            self.canvas_renderer.translation_x += camera_speed
+            camera.pan_camera(camera_speed, 0, self.canvas_renderer.position)
         if key == nanogui.glfw.KEY_RIGHT:
-            self.canvas_renderer.translation_x -= camera_speed
+            camera.pan_camera(-camera_speed, 0, self.canvas_renderer.position)
         if key == nanogui.glfw.KEY_UP:
-            self.canvas_renderer.translation_y -= camera_speed
+            camera.pan_camera(0, -camera_speed, self.canvas_renderer.position)
         if key == nanogui.glfw.KEY_DOWN:
-            self.canvas_renderer.translation_y += camera_speed
+            camera.pan_camera(0, camera_speed, self.canvas_renderer.position)
 
-        if key == nanogui.glfw.KEY_EQUAL and modifiers == nanogui.glfw.MOD_SHIFT:
-            # TODO: center zoom on current screen center
+        control_command_key = nanogui.glfw.MOD_SUPER if sys.platform.startswith("darwin") else nanogui.glfw.MOD_CONTROL
 
-            # 1) calculate position currently at center
-            # 2) perform zoom
-            # 3) find difference between new center and old center
-            # 4) translate by this amount
-            self.canvas_renderer.zoom += self.delta_time * 2
-        if key == nanogui.glfw.KEY_MINUS and modifiers == nanogui.glfw.MOD_SHIFT:
-            self.canvas_renderer.zoom -= self.delta_time * 2
+        if key == nanogui.glfw.KEY_EQUAL and modifiers == control_command_key:
+            camera.zoom_to_point(0, 0, 1 + camera_speed, self.canvas_renderer.position)
+        if key == nanogui.glfw.KEY_MINUS and modifiers == control_command_key:
+            camera.zoom_to_point(0, 0, 1 - camera_speed, self.canvas_renderer.position)
 
         return False
 
@@ -177,9 +242,110 @@ class XStitchEditorApp(nanogui.Screen):
         if super(XStitchEditorApp, self).scroll_event(mouse_position, delta):
             return True
 
+        if self.canvas_renderer is None:
+            return False
+
         # We only care about vertical scroll
         if delta[1]:
-            self.canvas_renderer.zoom += delta[1] * self.delta_time
+            camera = self.canvas_renderer.camera
+            mouse_ndc = camera.screen_to_ortho_ndc(*mouse_position)
 
-        print(f"scroll event: {mouse_position}, {delta}")
+            zoom_factor = 1 + (delta[1] * self.delta_time)
+            camera.zoom_to_point(*mouse_ndc, zoom_factor, self.canvas_renderer.position)
+
+        return False
+
+    # TODO: start tracking mouse location and only enable the cursor for a specific tool where it
+    # makes sense. eg:
+    # single stitch tool: when outside canvas bounds, enable hand cursor
+    # (ditto for back stitch and fill)
+
+    def mouse_button_event(self, position, button, down, modifiers):
+        if super(XStitchEditorApp, self).mouse_button_event(position, button, down, modifiers):
+            return True
+
+        if self.canvas_renderer is None:
+            return False
+
+        if button == nanogui.glfw.MOUSE_BUTTON_1 and down:
+            camera = self.canvas_renderer.camera
+            mouse_ndc = camera.screen_to_ndc(*position)
+            if mouse_ndc is None:
+                return False
+
+            if self.selected_tool == "ZOOM_IN":
+                zoom_factor = 1 + (0.1)
+                camera.zoom_to_point(*mouse_ndc, zoom_factor, self.canvas_renderer.position)
+                return False
+            if self.selected_tool == "ZOOM_OUT":
+                zoom_factor = 1 - (0.1)
+                camera.zoom_to_point(*mouse_ndc, zoom_factor, self.canvas_renderer.position)
+                return False
+
+            if self.over_tool_window(*position):
+                return False
+
+            left, right, top, bottom = camera.canvas_bounds(self.canvas_renderer.position)
+            selected_stitch = camera.ndc_to_stitch(*mouse_ndc, left, right, top, bottom)
+
+            if selected_stitch is None:
+                return False
+
+            if self.selected_tool == "SINGLE_STITCH":
+                if self.selected_thread:
+                    self.canvas_renderer.draw_to_canvas(*selected_stitch, self.selected_thread)
+            elif self.selected_tool == "BACK_STITCH":
+                pass  # TODO
+            elif self.selected_tool == "ERASE":
+                self.canvas_renderer.erase_from_canvas(*selected_stitch)
+            elif self.selected_tool == "FILL":
+                pass  # TODO
+        return False
+
+    def mouse_motion_event(self, position, rel, button, modifiers):
+        if super(XStitchEditorApp, self).mouse_motion_event(position, rel, button, modifiers):
+            return True
+
+        if self.canvas_renderer is None:
+            return False
+
+        # TODO: check that this gets the right result on windows/linux and
+        # that it isn't just a weird glfw quirk
+        button_1 = nanogui.glfw.MOUSE_BUTTON_2 if sys.platform.startswith("darwin") else nanogui.glfw.MOUSE_BUTTON_1
+        camera = self.canvas_renderer.camera
+
+        if button == button_1:
+            mouse_ndc = camera.screen_to_ndc(*position)
+            if mouse_ndc is None:
+                return False
+
+            if self.selected_tool == "MOVE":
+                prev_position = (position[0] - rel[0], position[1] - rel[1])
+                prev_ndc = camera.screen_to_ortho_ndc(*prev_position)
+                current_ndc = camera.screen_to_ortho_ndc(*position)
+
+                if prev_ndc is None:
+                    return False
+
+                camera.pan_camera(current_ndc[0] - prev_ndc[0], current_ndc[1] - prev_ndc[1], self.canvas_renderer.position)
+
+            if self.over_tool_window(*position):
+                return False
+
+            left, right, top, bottom = camera.canvas_bounds(self.canvas_renderer.position)
+            selected_stitch = camera.ndc_to_stitch(*mouse_ndc, left, right, top, bottom)
+
+            if selected_stitch is None:
+                # TODO: if a drawing tool rather than a zoom tool is selected, it would
+                # make sense to also move the camera here aswell. Change the cursor
+                # during the duration of the drag to make it obvious
+
+                return False
+
+            if self.selected_tool == "SINGLE_STITCH":
+                if self.selected_thread:
+                    self.canvas_renderer.draw_to_canvas(*selected_stitch, self.selected_thread)
+            if self.selected_tool == "ERASE":
+                self.canvas_renderer.erase_from_canvas(*selected_stitch)
+
         return False

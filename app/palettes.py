@@ -5,7 +5,7 @@ import functools
 
 class Thread:
     """Convenience class representing a single colour of thread"""
-    def __init__(self, company: str, number: int, description: str,
+    def __init__(self, company: str, number: str, description: str,
                  R: int, G: int, B: int):
         self.company = company
         self.number = number
@@ -42,7 +42,7 @@ with open("assets/palettes.json") as palette_file:
             for row in reader:
                 # TODO: Should be checking for any duplicates
                 thread = Thread(
-                    manufacturer, row["ID"], row["Description"],
+                    manufacturer, str(row["ID"]), str(row["Description"]),
                     int(row["Red"]), int(row["Green"]), int(row["Blue"]))
                 threads[row["ID"]] = thread
                 GLOBAL_THREAD_LOOKUP[thread.global_identifier] = thread
