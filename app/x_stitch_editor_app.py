@@ -3,7 +3,7 @@ import sys
 
 import nanogui
 
-from app import MANUFACTURERS, Thread, CanvasRenderer, GLOBAL_THREAD_LOOKUP
+from app import MANUFACTURERS, Thread, CanvasRenderer, GLOBAL_THREAD_LOOKUP, Project
 
 
 class LargeIconTheme(nanogui.Theme):
@@ -32,17 +32,25 @@ class XStitchEditorApp(nanogui.Screen):
         self.selected_tool = None
 
         self.shader = None
+        self.project = None
         self.canvas_renderer = None
         self.last_frame = 0.0
         self.delta_time = 0.0
 
-        # TODO: this should be initialised either by the user creating a new canvas
-        # or loading an existing project.
-        self.canvas_renderer = CanvasRenderer(self, 100, 100)
-
         large_icon_theme = LargeIconTheme(self.nvg_context())
         self.set_theme(large_icon_theme)
 
+        self.create_tool_window()
+        self.create_mouse_pos_window()
+        self.create_splashscreen_window()
+
+        self.create_new_project_window()
+
+        self.perform_layout()
+
+    # ~~~~ Window Creators ~~~~
+
+    def create_tool_window(self):
         self.tool_window = nanogui.Window(self, "Tools")
         self.tool_window.set_position((0, 0))
         self.tool_window.set_layout(nanogui.GroupLayout(
@@ -89,7 +97,7 @@ class XStitchEditorApp(nanogui.Screen):
 
         toolbutton = nanogui.ToolButton(tools, nanogui.icons.FA_FILL_DRIP)
         toolbutton.set_tooltip("Fill Area")
-        toolbutton.set_callback(make_tool_button_callback("FILL", nanogui))
+        toolbutton.set_callback(make_tool_button_callback("FILL"))
 
         toolbutton = nanogui.ToolButton(tools, nanogui.icons.FA_SEARCH_PLUS)
         toolbutton.set_tooltip("Zoom In")
@@ -123,7 +131,7 @@ class XStitchEditorApp(nanogui.Screen):
         palette_layout.set_col_alignment([nanogui.Alignment.Minimum, nanogui.Alignment.Minimum, nanogui.Alignment.Maximum])
         palette_widget.set_layout(palette_layout)
 
-        # TODO: Load this from a setting
+        # TODO: Read from project object
         selected_palette = None
         for p in MANUFACTURERS.values():
             selected_palette = p
@@ -150,6 +158,9 @@ class XStitchEditorApp(nanogui.Screen):
 
         # TODO: switch/edit palette button that launches a popup to do so?
 
+        self.tool_window.set_visible(False)
+
+    def create_mouse_pos_window(self):
         self.mouse_pos_window = nanogui.Window(self, "")
         self.mouse_pos_window.set_layout(nanogui.GroupLayout(
             margin=5, spacing=5, group_spacing=0, group_indent=0))
@@ -157,7 +168,112 @@ class XStitchEditorApp(nanogui.Screen):
         self.mouse_location_label_2 = nanogui.Label(self.mouse_pos_window, "")
         self.mouse_pos_window.set_visible(False)
 
-        self.perform_layout()
+    def create_splashscreen_window(self):
+        self.spashscreen_window = nanogui.Window(self, "")
+        self.spashscreen_window.set_layout(nanogui.GroupLayout(
+            margin=5, spacing=5, group_spacing=10, group_indent=0))
+
+        def create_project():
+            self.spashscreen_window.set_visible(False)
+            self.new_project_window.set_visible(True)
+            self.perform_layout()
+
+        def convert_image():
+            print("convert image")
+
+        def load_project():
+            print("load project")
+
+        create_project_button = nanogui.Button(self.spashscreen_window, "Create new project")
+        create_project_button.set_callback(create_project)
+        create_project_button.set_font_size(30)
+
+        convert_image_button = nanogui.Button(self.spashscreen_window, "Create new project from an image")
+        convert_image_button.set_callback(convert_image)
+        convert_image_button.set_font_size(30)
+
+        load_project_button = nanogui.Button(self.spashscreen_window, "Load a project")
+        load_project_button.set_callback(load_project)
+        load_project_button.set_font_size(30)
+
+        self.spashscreen_window.center()
+
+    def create_new_project_window(self):
+        self.new_project_window = nanogui.Window(self, "")
+        self.new_project_window.set_layout(nanogui.BoxLayout(
+            nanogui.Orientation.Vertical, nanogui.Alignment.Middle,
+            margin=15, spacing=5))
+
+        errors = nanogui.Label(self.new_project_window, "")
+        errors.set_color(nanogui.Color(204, 0, 0, 255))
+        errors.set_visible(False)
+
+        form_widget = nanogui.Widget(self.new_project_window)
+        layout = nanogui.GridLayout(nanogui.Orientation.Horizontal, 2,
+                                    nanogui.Alignment.Middle, margin=0, spacing=5)
+        layout.set_col_alignment([nanogui.Alignment.Fill, nanogui.Alignment.Fill])
+        form_widget.set_layout(layout)
+
+        nanogui.Label(form_widget, "Project Title:")
+        title = nanogui.TextBox(form_widget, "")
+        title.set_editable(True)
+        title.set_alignment(nanogui.TextBox.Alignment.Left)
+
+        nanogui.Label(form_widget, "Canvas Width:")
+        width = nanogui.IntBox(form_widget, 100)
+
+        nanogui.Label(form_widget, "Canvas Height:")
+        height = nanogui.IntBox(form_widget, 100)
+
+        for intbox in [width, height]:
+            intbox.set_default_value("100")
+            intbox.set_units("stitches")
+            intbox.set_editable(True)
+            intbox.set_alignment(nanogui.TextBox.Alignment.Left)
+            intbox.set_fixed_size((200, 0))
+            intbox.set_value_increment(10)
+            intbox.set_spinnable(True)
+            intbox.set_min_value(1)
+
+        nanogui.Label(form_widget, "Canvas Background Colour:")
+        color = nanogui.ColorPicker(form_widget, nanogui.Color(255, 255, 255, 255))
+
+        # TODO: select palette from list?
+
+        def create_new_project():
+            errors.set_visible(False)
+
+            try:
+                project = Project(
+                    title.value(), width.value(), height.value(),
+                    color.color, None)
+            except ValueError as err:
+                errors.set_caption(str(err))
+                errors.set_visible(True)
+                self.perform_layout()
+                return
+
+            # TODO: use bg colour + palette data
+            self.project = project
+            self.canvas_renderer = CanvasRenderer(self, project.width, project.height)
+
+            # reset form values
+            title.set_value("")
+            width.set_value(100)
+            height.set_value(100)
+            color.set_color(nanogui.Color(255, 255, 255, 255))
+
+            self.new_project_window.set_visible(False)
+            self.tool_window.set_visible(True)
+            self.perform_layout()
+
+        confirm_button = nanogui.Button(self.new_project_window, "Confirm")
+        confirm_button.set_callback(create_new_project)
+
+        self.new_project_window.center()
+        self.new_project_window.set_visible(False)
+
+    # ~~~~ Misc ~~~~
 
     def update_selected_thread_widget(self):
         if self.selected_thread is None:
@@ -204,6 +320,8 @@ class XStitchEditorApp(nanogui.Screen):
 
         return x >= control_x and y >= control_y and \
                x <= control_x + control_width and y <= control_y + control_height
+
+    # ~~~~ Window Events ~~~~
 
     def keyboard_event(self, key, scancode, action, modifiers):
         if super(XStitchEditorApp, self).keyboard_event(key, scancode,
@@ -349,3 +467,8 @@ class XStitchEditorApp(nanogui.Screen):
                 self.canvas_renderer.erase_from_canvas(*selected_stitch)
 
         return False
+
+    def resize_event(self, size):
+        self.spashscreen_window.center()
+        self.new_project_window.center()
+        return True
