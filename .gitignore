@@ -11,9 +11,10 @@ CTestTestfile.cmake
 _deps
 /build
 /.vscode
-*/__pycache__
+__pycache__/
 /venv
 /ext
+/third_party
 # Prerequisites
 *.d
 
@@ -46,3 +47,5 @@ _deps
 *.exe
 *.out
 *.app
+
+.DS_Store
