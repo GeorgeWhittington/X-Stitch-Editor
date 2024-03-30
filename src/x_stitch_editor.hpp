@@ -24,9 +24,10 @@ private:
 
     float _last_frame = 0.0f;
     float _delta_frame = 0.0f;
+
+    ToolWindow *tool_window;
 public:
     XStitchEditorApplication();
 
-    ToolWindow *tool_window;
     ToolOptions selected_tool = ToolOptions::MOVE;
 };

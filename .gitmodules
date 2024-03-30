@@ -1,3 +1,6 @@
 [submodule "third_party/nanogui"]
 	path = third_party/nanogui
 	url = https://github.com/mitsuba-renderer/nanogui/
+[submodule "third_party/tinyxml2"]
+	path = third_party/tinyxml2
+	url = https://github.com/leethomason/tinyxml2

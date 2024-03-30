@@ -1,0 +1,457 @@
+<?xml version="1.0"?>
+<manufacturer name="DMC">
+  <thread id="3713" description="Salmon Very Light" red="255" green="226" blue="226"/>
+  <thread id="761" description="Salmon Light" red="255" green="201" blue="201"/>
+  <thread id="760" description="Salmon" red="245" green="173" blue="173"/>
+  <thread id="3712" description="Salmon Medium" red="241" green="135" blue="135"/>
+  <thread id="3328" description="Salmon Dark" red="227" green="109" blue="109"/>
+  <thread id="347" description="Salmon Very Dark" red="191" green="45" blue="45"/>
+  <thread id="353" description="Peach" red="254" green="215" blue="204"/>
+  <thread id="352" description="Coral Light" red="253" green="156" blue="151"/>
+  <thread id="351" description="Coral" red="233" green="106" blue="103"/>
+  <thread id="350" description="Coral Medium" red="224" green="72" blue="72"/>
+  <thread id="349" description="Coral Dark" red="210" green="16" blue="53"/>
+  <thread id="817" description="Coral Red Very Dark" red="187" green="5" blue="31"/>
+  <thread id="3708" description="Melon Light" red="255" green="203" blue="213"/>
+  <thread id="3706" description="Melon Medium" red="255" green="173" blue="188"/>
+  <thread id="3705" description="Melon Dark" red="255" green="121" blue="146"/>
+  <thread id="3801" description="Melon Very Dark" red="231" green="73" blue="103"/>
+  <thread id="666" description="Bright Red" red="227" green="29" blue="66"/>
+  <thread id="321" description="Red" red="199" green="43" blue="59"/>
+  <thread id="304" description="Red Medium" red="183" green="31" blue="51"/>
+  <thread id="498" description="Red Dark" red="167" green="19" blue="43"/>
+  <thread id="816" description="Garnet" red="151" green="11" blue="35"/>
+  <thread id="815" description="Garnet Medium" red="135" green="7" blue="31"/>
+  <thread id="814" description="Garnet Dark" red="123" green="0" blue="27"/>
+  <thread id="894" description="Carnation Very Light" red="255" green="178" blue="187"/>
+  <thread id="893" description="Carnation Light" red="252" green="144" blue="162"/>
+  <thread id="892" description="Carnation Medium" red="255" green="121" blue="140"/>
+  <thread id="891" description="Carnation Dark" red="255" green="87" blue="115"/>
+  <thread id="818" description="Baby Pink" red="255" green="223" blue="217"/>
+  <thread id="957" description="Geranium Pale" red="253" green="181" blue="181"/>
+  <thread id="956" description="Geranium" red="255" green="145" blue="145"/>
+  <thread id="309" description="Rose Dark" red="86" green="74" blue="74"/>
+  <thread id="963" description="Dusty Rose Ult Vy Lt" red="255" green="215" blue="215"/>
+  <thread id="3716" description="Dusty Rose Med Vy Lt" red="255" green="189" blue="189"/>
+  <thread id="962" description="Dusty Rose Medium" red="230" green="138" blue="138"/>
+  <thread id="961" description="Dusty Rose Dark" red="207" green="115" blue="115"/>
+  <thread id="3833" description="Raspberry Light" red="234" green="134" blue="153"/>
+  <thread id="3832" description="Raspberry Medium" red="219" green="85" blue="110"/>
+  <thread id="3831" description="Raspberry Dark" red="179" green="47" blue="72"/>
+  <thread id="777" description="Raspberry Very Dark" red="145" green="53" blue="70"/>
+  <thread id="819" description="Baby Pink Light" red="255" green="238" blue="235"/>
+  <thread id="3326" description="Rose Light" red="251" green="173" blue="180"/>
+  <thread id="776" description="Pink Medium" red="252" green="176" blue="185"/>
+  <thread id="899" description="Rose Medium" red="242" green="118" blue="136"/>
+  <thread id="335" description="Rose" red="238" green="84" blue="110"/>
+  <thread id="326" description="Rose Very Dark" red="179" green="59" blue="75"/>
+  <thread id="151" description="Dusty Rose Vry Lt" red="240" green="206" blue="212"/>
+  <thread id="3354" description="Dusty Rose Light" red="228" green="166" blue="172"/>
+  <thread id="3733" description="Dusty Rose" red="232" green="135" blue="155"/>
+  <thread id="3731" description="Dusty Rose Very Dark" red="218" green="103" blue="131"/>
+  <thread id="3350" description="Dusty Rose Ultra Dark" red="188" green="67" blue="101"/>
+  <thread id="150" description="Dusty Rose Ult Vy Dk" red="171" green="2" blue="73"/>
+  <thread id="3689" description="Mauve Light" red="251" green="191" blue="194"/>
+  <thread id="3688" description="Mauve Medium" red="231" green="169" blue="172"/>
+  <thread id="3687" description="Mauve" red="201" green="107" blue="112"/>
+  <thread id="3803" description="Mauve Dark" red="171" green="51" blue="87"/>
+  <thread id="3685" description="Mauve Very Dark" red="136" green="21" blue="49"/>
+  <thread id="605" description="Cranberry Very Light" red="255" green="192" blue="205"/>
+  <thread id="604" description="Cranberry Light" red="255" green="176" blue="190"/>
+  <thread id="603" description="Cranberry" red="255" green="164" blue="190"/>
+  <thread id="602" description="Cranberry Medium" red="226" green="72" blue="116"/>
+  <thread id="601" description="Cranberry Dark" red="209" green="40" blue="106"/>
+  <thread id="600" description="Cranberry Very Dark" red="205" green="47" blue="99"/>
+  <thread id="3806" description="Cyclamen Pink Light" red="255" green="140" blue="174"/>
+  <thread id="3805" description="Cyclamen Pink" red="243" green="71" blue="139"/>
+  <thread id="3804" description="Cyclamen Pink Dark" red="224" green="40" blue="118"/>
+  <thread id="3609" description="Plum Ultra Light" red="244" green="174" blue="213"/>
+  <thread id="3608" description="Plum Very Light" red="234" green="156" blue="196"/>
+  <thread id="3607" description="Plum Light" red="197" green="73" blue="137"/>
+  <thread id="718" description="Plum" red="156" green="36" blue="98"/>
+  <thread id="917" description="Plum Medium" red="155" green="19" blue="89"/>
+  <thread id="915" description="Plum Dark" red="130" green="0" blue="67"/>
+  <thread id="225" description="Shell Pink Ult Vy Lt" red="255" green="223" blue="213"/>
+  <thread id="224" description="Shell Pink Very Light" red="235" green="183" blue="175"/>
+  <thread id="152" description="Shell Pink Med Light" red="226" green="160" blue="153"/>
+  <thread id="223" description="Shell Pink Light" red="204" green="132" blue="124"/>
+  <thread id="3722" description="Shell Pink Med" red="188" green="108" blue="100"/>
+  <thread id="3721" description="Shell Pink Dark" red="161" green="75" blue="81"/>
+  <thread id="221" description="Shell Pink Vy Dk" red="136" green="62" blue="67"/>
+  <thread id="778" description="Antique Mauve Vy Lt" red="223" green="179" blue="187"/>
+  <thread id="3727" description="Antique Mauve Light" red="219" green="169" blue="178"/>
+  <thread id="316" description="Antique Mauve Med" red="183" green="115" blue="127"/>
+  <thread id="3726" description="Antique Mauve Dark" red="155" green="91" blue="102"/>
+  <thread id="315" description="Antique Mauve Md Dk" red="129" green="73" blue="82"/>
+  <thread id="3802" description="Antique Mauve Vy Dk" red="113" green="65" blue="73"/>
+  <thread id="902" description="Garnet Very Dark" red="130" green="38" blue="55"/>
+  <thread id="3743" description="Antique Violet Vy Lt" red="215" green="203" blue="211"/>
+  <thread id="3042" description="Antique Violet Light" red="183" green="157" blue="167"/>
+  <thread id="3041" description="Antique Violet Medium" red="149" green="111" blue="124"/>
+  <thread id="3740" description="Antique Violet Dark" red="120" green="87" blue="98"/>
+  <thread id="3836" description="Grape Light" red="186" green="145" blue="170"/>
+  <thread id="3835" description="Grape Medium" red="148" green="96" blue="131"/>
+  <thread id="3834" description="Grape Dark" red="114" green="55" blue="93"/>
+  <thread id="154" description="Grape Very Dark" red="87" green="36" blue="51"/>
+  <thread id="211" description="Lavender Light" red="227" green="203" blue="227"/>
+  <thread id="210" description="Lavender Medium" red="195" green="159" blue="195"/>
+  <thread id="209" description="Lavender Dark" red="163" green="123" blue="167"/>
+  <thread id="208" description="Lavender Very Dark" red="131" green="91" blue="139"/>
+  <thread id="3837" description="Lavender Ultra Dark" red="108" green="58" blue="110"/>
+  <thread id="327" description="Violet Dark" red="99" green="54" blue="102"/>
+  <thread id="153" description="Violet Very Light" red="230" green="204" blue="217"/>
+  <thread id="554" description="Violet Light" red="219" green="179" blue="203"/>
+  <thread id="553" description="Violet" red="163" green="99" blue="139"/>
+  <thread id="552" description="Violet  Medium" red="128" green="58" blue="107"/>
+  <thread id="550" description="Violet Very Dark" red="92" green="24" blue="78"/>
+  <thread id="3747" description="Blue Violet Vy Lt" red="211" green="215" blue="237"/>
+  <thread id="341" description="Blue Violet Light" red="183" green="191" blue="221"/>
+  <thread id="156" description="Blue Violet Med Lt" red="163" green="174" blue="209"/>
+  <thread id="340" description="Blue Violet Medium" red="173" green="167" blue="199"/>
+  <thread id="155" description="Blue Violet Med Dark" red="152" green="145" blue="182"/>
+  <thread id="3746" description="Blue Violet Dark" red="119" green="107" blue="152"/>
+  <thread id="333" description="Blue Violet Very Dark" red="92" green="84" blue="120"/>
+  <thread id="157" description="Cornflower Blue Vy Lt" red="187" green="195" blue="217"/>
+  <thread id="794" description="Cornflower Blue Light" red="143" green="156" blue="193"/>
+  <thread id="793" description="Cornflower Blue Med" red="112" green="125" blue="162"/>
+  <thread id="3807" description="Cornflower Blue" red="96" green="103" blue="140"/>
+  <thread id="792" description="Cornflower Blue Dark" red="85" green="91" blue="123"/>
+  <thread id="158" description="Cornflower Blu M V D" red="76" green="82" blue="110"/>
+  <thread id="791" description="Cornflower Blue V D" red="70" green="69" blue="99"/>
+  <thread id="3840" description="Lavender Blue Light" red="176" green="192" blue="218"/>
+  <thread id="3839" description="Lavender Blue Med" red="123" green="142" blue="171"/>
+  <thread id="3838" description="Lavender Blue Dark" red="92" green="114" blue="148"/>
+  <thread id="800" description="Delft Blue Pale" red="192" green="204" blue="222"/>
+  <thread id="809" description="Delft Blue" red="148" green="168" blue="198"/>
+  <thread id="799" description="Delft Blue Medium" red="116" green="142" blue="182"/>
+  <thread id="798" description="Delft Blue Dark" red="70" green="106" blue="142"/>
+  <thread id="797" description="Royal Blue" red="19" green="71" blue="125"/>
+  <thread id="796" description="Royal Blue Dark" red="17" green="65" blue="109"/>
+  <thread id="820" description="Royal Blue Very Dark" red="14" green="54" blue="92"/>
+  <thread id="162" description="Blue Ultra Very Light" red="219" green="236" blue="245"/>
+  <thread id="827" description="Blue Very Light" red="189" green="221" blue="237"/>
+  <thread id="813" description="Blue Light" red="161" green="194" blue="215"/>
+  <thread id="826" description="Blue Medium" red="107" green="158" blue="191"/>
+  <thread id="825" description="Blue Dark" red="71" green="129" blue="165"/>
+  <thread id="824" description="Blue Very Dark" red="57" green="105" blue="135"/>
+  <thread id="996" description="Electric Blue Medium" red="48" green="194" blue="236"/>
+  <thread id="3843" description="Electric Blue" red="20" green="170" blue="208"/>
+  <thread id="995" description="Electric Blue Dark" red="38" green="150" blue="182"/>
+  <thread id="3846" description="Turquoise Bright Light" red="6" green="227" blue="230"/>
+  <thread id="3845" description="Turquoise Bright Med" red="4" green="196" blue="202"/>
+  <thread id="3844" description="Turquoise Bright Dark" red="18" green="174" blue="186"/>
+  <thread id="159" description="Blue Gray Light" red="199" green="202" blue="215"/>
+  <thread id="160" description="Blue Gray Medium" red="153" green="159" blue="183"/>
+  <thread id="161" description="Blue Gray" red="120" green="128" blue="164"/>
+  <thread id="3756" description="Baby Blue Ult Vy Lt" red="238" green="252" blue="252"/>
+  <thread id="775" description="Baby Blue Very Light" red="217" green="235" blue="241"/>
+  <thread id="3841" description="Baby Blue Pale" red="205" green="223" blue="237"/>
+  <thread id="3325" description="Baby Blue Light" red="184" green="210" blue="230"/>
+  <thread id="3755" description="Baby Blue" red="147" green="180" blue="206"/>
+  <thread id="334" description="Baby Blue Medium" red="115" green="159" blue="193"/>
+  <thread id="322" description="Baby Blue Dark" red="90" green="143" blue="184"/>
+  <thread id="312" description="Baby Blue Very Dark" red="53" green="102" blue="139"/>
+  <thread id="803" description="Baby Blue Ult Vy Dk" red="44" green="89" blue="124"/>
+  <thread id="336" description="Navy Blue" red="37" green="59" blue="115"/>
+  <thread id="823" description="Navy Blue Dark" red="33" green="48" blue="99"/>
+  <thread id="939" description="Navy Blue Very Dark" red="27" green="40" blue="83"/>
+  <thread id="3753" description="Antique Blue Ult Vy Lt" red="219" green="226" blue="233"/>
+  <thread id="3752" description="Antique Blue Very Lt" red="199" green="209" blue="219"/>
+  <thread id="932" description="Antique Blue Light" red="162" green="181" blue="198"/>
+  <thread id="931" description="Antique Blue Medium" red="106" green="133" blue="158"/>
+  <thread id="930" description="Antique Blue Dark" red="69" green="92" blue="113"/>
+  <thread id="3750" description="Antique Blue Very Dk" red="56" green="76" blue="94"/>
+  <thread id="828" description="Sky Blue Vy Lt" red="197" green="232" blue="237"/>
+  <thread id="3761" description="Sky Blue Light" red="172" green="216" blue="226"/>
+  <thread id="519" description="Sky Blue" red="126" green="177" blue="200"/>
+  <thread id="518" description="Wedgewood Light" red="79" green="147" blue="167"/>
+  <thread id="3760" description="Wedgewood Med" red="62" green="133" blue="162"/>
+  <thread id="517" description="Wedgewood Dark" red="59" green="118" blue="143"/>
+  <thread id="3842" description="Wedgewood Vry Dk" red="50" green="102" blue="124"/>
+  <thread id="311" description="Wedgewood Ult VyDk" red="28" green="80" blue="102"/>
+  <thread id="747" description="Peacock Blue Vy Lt" red="229" green="252" blue="253"/>
+  <thread id="3766" description="Peacock Blue Light" red="153" green="207" blue="217"/>
+  <thread id="807" description="Peacock Blue" red="100" green="171" blue="186"/>
+  <thread id="806" description="Peacock Blue Dark" red="61" green="149" blue="165"/>
+  <thread id="3765" description="Peacock Blue Vy Dk" red="52" green="127" blue="140"/>
+  <thread id="3811" description="Turquoise Very Light" red="188" green="227" blue="230"/>
+  <thread id="598" description="Turquoise Light" red="144" green="195" blue="204"/>
+  <thread id="597" description="Turquoise" red="91" green="163" blue="179"/>
+  <thread id="3810" description="Turquoise Dark" red="72" green="142" blue="154"/>
+  <thread id="3809" description="Turquoise Vy Dark" red="63" green="124" blue="133"/>
+  <thread id="3808" description="Turquoise Ult Vy Dk" red="54" green="105" blue="112"/>
+  <thread id="928" description="Gray Green Vy Lt" red="221" green="227" blue="227"/>
+  <thread id="927" description="Gray Green Light" red="189" green="203" blue="203"/>
+  <thread id="926" description="Gray Green Med" red="152" green="174" blue="174"/>
+  <thread id="3768" description="Gray Green Dark" red="101" green="127" blue="127"/>
+  <thread id="924" description="Gray Green Vy Dark" red="86" green="106" blue="106"/>
+  <thread id="3849" description="Teal Green Light" red="82" green="179" blue="164"/>
+  <thread id="3848" description="Teal Green Med" red="85" green="147" blue="146"/>
+  <thread id="3847" description="Teal Green Dark" red="52" green="125" blue="117"/>
+  <thread id="964" description="Sea Green Light" red="169" green="226" blue="216"/>
+  <thread id="959" description="Sea Green Med" red="89" green="199" blue="180"/>
+  <thread id="958" description="Sea Green Dark" red="62" green="182" blue="161"/>
+  <thread id="3812" description="Sea Green Vy Dk" red="47" green="140" blue="132"/>
+  <thread id="3851" description="Green Bright Lt" red="73" green="179" blue="161"/>
+  <thread id="943" description="Green Bright Md" red="61" green="147" blue="132"/>
+  <thread id="3850" description="Green Bright Dk" red="55" green="132" blue="119"/>
+  <thread id="993" description="Aquamarine Vy Lt" red="144" green="192" blue="180"/>
+  <thread id="992" description="Aquamarine Lt" red="111" green="174" blue="159"/>
+  <thread id="3814" description="Aquamarine" red="80" green="139" blue="125"/>
+  <thread id="991" description="Aquamarine Dk" red="71" green="123" blue="110"/>
+  <thread id="966" description="Jade Ultra Vy Lt" red="185" green="215" blue="192"/>
+  <thread id="564" description="Jade Very Light" red="167" green="205" blue="175"/>
+  <thread id="563" description="Jade Light" red="143" green="192" blue="152"/>
+  <thread id="562" description="Jade Medium" red="83" green="151" blue="106"/>
+  <thread id="505" description="Jade Green" red="51" green="131" blue="98"/>
+  <thread id="3817" description="Celadon Green Lt" red="153" green="195" blue="170"/>
+  <thread id="3816" description="Celadon Green" red="101" green="165" blue="125"/>
+  <thread id="163" description="Celadon Green Md" red="77" green="131" blue="97"/>
+  <thread id="3815" description="Celadon Green Dk" red="71" green="119" blue="89"/>
+  <thread id="561" description="Celadon Green VD" red="44" green="106" blue="69"/>
+  <thread id="504" description="Blue Green Vy Lt" red="196" green="222" blue="204"/>
+  <thread id="3813" description="Blue Green Lt" red="178" green="212" blue="189"/>
+  <thread id="503" description="Blue Green Med" red="123" green="172" blue="148"/>
+  <thread id="502" description="Blue Green" red="91" green="144" blue="113"/>
+  <thread id="501" description="Blue Green Dark" red="57" green="111" blue="82"/>
+  <thread id="500" description="Blue Green Vy Dk" red="4" green="77" blue="51"/>
+  <thread id="955" description="Nile Green Light" red="162" green="214" blue="173"/>
+  <thread id="954" description="Nile Green" red="136" green="186" blue="145"/>
+  <thread id="913" description="Nile Green Med" red="109" green="171" blue="119"/>
+  <thread id="912" description="Emerald Green Lt" red="27" green="157" blue="107"/>
+  <thread id="911" description="Emerald Green Med" red="24" green="144" blue="101"/>
+  <thread id="910" description="Emerald Green Dark" red="24" green="126" blue="86"/>
+  <thread id="909" description="Emerald Green Vy Dk" red="21" green="111" blue="73"/>
+  <thread id="3818" description="Emerald Grn Ult V Dk" red="17" green="90" blue="59"/>
+  <thread id="369" description="Pistachio Green Vy Lt" red="215" green="237" blue="204"/>
+  <thread id="368" description="Pistachio Green Lt" red="166" green="194" blue="152"/>
+  <thread id="320" description="Pistachio Green Med" red="105" green="136" blue="90"/>
+  <thread id="367" description="Pistachio Green Dk" red="97" green="122" blue="82"/>
+  <thread id="319" description="Pistachio Grn Vy Dk" red="32" green="95" blue="46"/>
+  <thread id="890" description="Pistachio Grn Ult V D" red="23" green="73" blue="35"/>
+  <thread id="164" description="Forest Green Lt" red="200" green="216" blue="184"/>
+  <thread id="989" description="Forest Green " red="141" green="166" blue="117"/>
+  <thread id="988" description="Forest Green Med" red="115" green="139" blue="91"/>
+  <thread id="987" description="Forest Green Dk" red="88" green="113" blue="65"/>
+  <thread id="986" description="Forest Green Vy Dk" red="64" green="82" blue="48"/>
+  <thread id="772" description="Yellow Green Vy Lt" red="228" green="236" blue="212"/>
+  <thread id="3348" description="Yellow Green Lt" red="204" green="217" blue="177"/>
+  <thread id="3347" description="Yellow Green Med" red="113" green="147" blue="92"/>
+  <thread id="3346" description="Hunter Green" red="64" green="106" blue="58"/>
+  <thread id="3345" description="Hunter Green Dk" red="27" green="89" blue="21"/>
+  <thread id="895" description="Hunter Green Vy Dk" red="27" green="83" blue="0"/>
+  <thread id="704" description="Chartreuse Bright" red="158" green="207" blue="52"/>
+  <thread id="703" description="Chartreuse" red="123" green="181" blue="71"/>
+  <thread id="702" description="Kelly Green" red="71" green="167" blue="47"/>
+  <thread id="701" description="Green Light" red="63" green="143" blue="41"/>
+  <thread id="700" description="Green Bright" red="7" green="115" blue="27"/>
+  <thread id="699" description="Green" red="5" green="101" blue="23"/>
+  <thread id="907" description="Parrot Green Lt" red="199" green="230" blue="102"/>
+  <thread id="906" description="Parrot Green Md" red="127" green="179" blue="53"/>
+  <thread id="905" description="Parrot Green Dk" red="98" green="138" blue="40"/>
+  <thread id="904" description="Parrot Green V Dk" red="85" green="120" blue="34"/>
+  <thread id="472" description="Avocado Grn U Lt" red="216" green="228" blue="152"/>
+  <thread id="471" description="Avocado Grn V Lt" red="174" green="191" blue="121"/>
+  <thread id="470" description="Avocado Grn Lt" red="148" green="171" blue="79"/>
+  <thread id="469" description="Avocado Green" red="114" green="132" blue="60"/>
+  <thread id="937" description="Avocado Green Md" red="98" green="113" blue="51"/>
+  <thread id="936" description="Avocado Grn V Dk" red="76" green="88" blue="38"/>
+  <thread id="935" description="Avocado Green Dk" red="66" green="77" blue="33"/>
+  <thread id="934" description="Avocado Grn Black" red="49" green="57" blue="25"/>
+  <thread id="523" description="Fern Green Lt" red="171" green="177" blue="151"/>
+  <thread id="3053" description="Green Gray" red="156" green="164" blue="130"/>
+  <thread id="3052" description="Green Gray Md" red="136" green="146" blue="104"/>
+  <thread id="3051" description="Green Gray Dk" red="95" green="102" blue="72"/>
+  <thread id="524" description="Fern Green Vy Lt" red="196" green="205" blue="172"/>
+  <thread id="522" description="Fern Green" red="150" green="158" blue="126"/>
+  <thread id="520" description="Fern Green Dark" red="102" green="109" blue="79"/>
+  <thread id="3364" description="Pine Green" red="131" green="151" blue="95"/>
+  <thread id="3363" description="Pine Green Md" red="114" green="130" blue="86"/>
+  <thread id="3362" description="Pine Green Dk" red="94" green="107" blue="71"/>
+  <thread id="165" description="Moss Green Vy Lt" red="239" green="244" blue="164"/>
+  <thread id="3819" description="Moss Green Lt" red="224" green="232" blue="104"/>
+  <thread id="166" description="Moss Green Md Lt" red="192" green="200" blue="64"/>
+  <thread id="581" description="Moss Green" red="167" green="174" blue="56"/>
+  <thread id="580" description="Moss Green Dk" red="136" green="141" blue="51"/>
+  <thread id="734" description="Olive Green Lt" red="199" green="192" blue="119"/>
+  <thread id="733" description="Olive Green Md" red="188" green="179" blue="76"/>
+  <thread id="732" description="Olive Green" red="148" green="140" blue="54"/>
+  <thread id="731" description="Olive Green Dk" red="147" green="139" blue="55"/>
+  <thread id="730" description="Olive Green V Dk" red="130" green="123" blue="48"/>
+  <thread id="3013" description="Khaki Green Lt" red="185" green="185" blue="130"/>
+  <thread id="3012" description="Khaki Green Md" red="166" green="167" blue="93"/>
+  <thread id="3011" description="Khaki Green Dk" red="137" green="138" blue="88"/>
+  <thread id="372" description="Mustard Lt" red="204" green="183" blue="132"/>
+  <thread id="371" description="Mustard" red="191" green="166" blue="113"/>
+  <thread id="370" description="Mustard Medium" red="184" green="157" blue="100"/>
+  <thread id="834" description="Golden Olive Vy Lt" red="219" green="190" blue="127"/>
+  <thread id="833" description="Golden Olive Lt" red="200" green="171" blue="108"/>
+  <thread id="832" description="Golden Olive" red="189" green="155" blue="81"/>
+  <thread id="831" description="Golden Olive Md" red="170" green="143" blue="86"/>
+  <thread id="830" description="Golden Olive Dk" red="141" green="120" blue="75"/>
+  <thread id="829" description="Golden Olive Vy Dk" red="126" green="107" blue="66"/>
+  <thread id="613" description="Drab Brown V Lt" red="220" green="196" blue="170"/>
+  <thread id="612" description="Drab Brown Lt" red="188" green="154" blue="120"/>
+  <thread id="611" description="Drab Brown" red="150" green="118" blue="86"/>
+  <thread id="610" description="Drab Brown Dk" red="121" green="96" blue="71"/>
+  <thread id="3047" description="Yellow Beige Lt" red="231" green="214" blue="193"/>
+  <thread id="3046" description="Yellow Beige Md" red="216" green="188" blue="154"/>
+  <thread id="3045" description="Yellow Beige Dk" red="188" green="150" blue="106"/>
+  <thread id="167" description="Yellow Beige V Dk" red="167" green="124" blue="73"/>
+  <thread id="746" description="Off White" red="252" green="252" blue="238"/>
+  <thread id="677" description="Old Gold Vy Lt" red="245" green="236" blue="203"/>
+  <thread id="422" description="Hazelnut Brown Lt" red="198" green="159" blue="123"/>
+  <thread id="3828" description="Hazelnut Brown" red="183" green="139" blue="97"/>
+  <thread id="420" description="Hazelnut Brown Dk" red="160" green="112" blue="66"/>
+  <thread id="869" description="Hazelnut Brown V Dk" red="131" green="94" blue="57"/>
+  <thread id="728" description="Topaz" red="228" green="180" blue="104"/>
+  <thread id="783" description="Topaz Medium" red="206" green="145" blue="36"/>
+  <thread id="782" description="Topaz Dark" red="174" green="119" blue="32"/>
+  <thread id="781" description="Topaz Very Dark" red="162" green="109" blue="32"/>
+  <thread id="780" description="Topaz Ultra Vy Dk" red="148" green="99" blue="26"/>
+  <thread id="676" description="Old Gold Lt" red="229" green="206" blue="151"/>
+  <thread id="729" description="Old Gold Medium" red="208" green="165" blue="62"/>
+  <thread id="680" description="Old Gold Dark" red="188" green="141" blue="14"/>
+  <thread id="3829" description="Old Gold Vy Dark" red="169" green="130" blue="4"/>
+  <thread id="3822" description="Straw Light" red="246" green="220" blue="152"/>
+  <thread id="3821" description="Straw" red="243" green="206" blue="117"/>
+  <thread id="3820" description="Straw Dark" red="223" green="182" blue="95"/>
+  <thread id="3852" description="Straw Very Dark" red="205" green="157" blue="55"/>
+  <thread id="445" description="Lemon Light" red="255" green="251" blue="139"/>
+  <thread id="307" description="Lemon" red="253" green="237" blue="84"/>
+  <thread id="973" description="Canary Bright" red="255" green="227" blue="0"/>
+  <thread id="444" description="Lemon Dark" red="255" green="214" blue="0"/>
+  <thread id="3078" description="Golden Yellow Vy Lt" red="253" green="249" blue="205"/>
+  <thread id="727" description="Topaz Vy Lt" red="255" green="241" blue="175"/>
+  <thread id="726" description="Topaz Light" red="253" green="215" blue="85"/>
+  <thread id="725" description="Topaz Med Lt" red="255" green="200" blue="64"/>
+  <thread id="972" description="Canary Deep" red="255" green="181" blue="21"/>
+  <thread id="745" description="Yellow Pale Light" red="255" green="233" blue="173"/>
+  <thread id="744" description="Yellow Pale" red="255" green="231" blue="147"/>
+  <thread id="743" description="Yellow Med" red="254" green="211" blue="118"/>
+  <thread id="742" description="Tangerine Light" red="255" green="191" blue="87"/>
+  <thread id="741" description="Tangerine Med" red="255" green="163" blue="43"/>
+  <thread id="740" description="Tangerine" red="255" green="139" blue="0"/>
+  <thread id="970" description="Pumpkin Light" red="247" green="139" blue="19"/>
+  <thread id="971" description="Pumpkin" red="246" green="127" blue="0"/>
+  <thread id="947" description="Burnt Orange" red="255" green="123" blue="77"/>
+  <thread id="946" description="Burnt Orange Med" red="235" green="99" blue="7"/>
+  <thread id="900" description="Burnt Orange Dark" red="209" green="88" blue="7"/>
+  <thread id="967" description="Apricot Very Light" red="255" green="222" blue="213"/>
+  <thread id="3824" description="Apricot Light" red="254" green="205" blue="194"/>
+  <thread id="3341" description="Apricot" red="252" green="171" blue="152"/>
+  <thread id="3340" description="Apricot Med" red="255" green="131" blue="111"/>
+  <thread id="608" description="Burnt Orange Bright" red="253" green="93" blue="53"/>
+  <thread id="606" description="Orange?Red Bright" red="250" green="50" blue="3"/>
+  <thread id="951" description="Tawny Light" red="255" green="226" blue="207"/>
+  <thread id="3856" description="Mahogany Ult Vy Lt" red="255" green="211" blue="181"/>
+  <thread id="722" description="Orange Spice Light" red="247" green="151" blue="111"/>
+  <thread id="721" description="Orange Spice Med" red="242" green="120" blue="66"/>
+  <thread id="720" description="Orange Spice Dark" red="229" green="92" blue="31"/>
+  <thread id="3825" description="Pumpkin Pale" red="253" green="189" blue="150"/>
+  <thread id="922" description="Copper Light" red="226" green="115" blue="35"/>
+  <thread id="921" description="Copper" red="198" green="98" blue="24"/>
+  <thread id="920" description="Copper Med" red="172" green="84" blue="20"/>
+  <thread id="919" description="Red?Copper" red="166" green="69" blue="16"/>
+  <thread id="918" description="Red?Copper Dark" red="130" green="52" blue="10"/>
+  <thread id="3770" description="Tawny Vy Light" red="255" green="238" blue="227"/>
+  <thread id="945" description="Tawny" red="251" green="213" blue="187"/>
+  <thread id="402" description="Mahogany Vy Lt" red="247" green="167" blue="119"/>
+  <thread id="3776" description="Mahogany Light" red="207" green="121" blue="57"/>
+  <thread id="301" description="Mahogany Med" red="179" green="95" blue="43"/>
+  <thread id="400" description="Mahogany Dark" red="143" green="67" blue="15"/>
+  <thread id="300" description="Mahogany Vy Dk" red="111" green="47" blue="0"/>
+  <thread id="3823" description="Yellow Ultra Pale" red="255" green="253" blue="227"/>
+  <thread id="3855" description="Autumn Gold Lt" red="250" green="211" blue="150"/>
+  <thread id="3854" description="Autumn Gold Med" red="242" green="175" blue="104"/>
+  <thread id="3853" description="Autumn Gold Dk" red="242" green="151" blue="70"/>
+  <thread id="3827" description="Golden Brown Pale" red="247" green="187" blue="119"/>
+  <thread id="977" description="Golden Brown Light" red="220" green="156" blue="86"/>
+  <thread id="976" description="Golden Brown Med" red="194" green="129" blue="66"/>
+  <thread id="3826" description="Golden Brown" red="173" green="114" blue="57"/>
+  <thread id="975" description="Golden Brown Dk" red="145" green="79" blue="18"/>
+  <thread id="948" description="Peach Very Light" red="254" green="231" blue="218"/>
+  <thread id="754" description="Peach Light" red="247" green="203" blue="191"/>
+  <thread id="3771" description="Terra Cotta Ult Vy Lt" red="244" green="187" blue="169"/>
+  <thread id="758" description="Terra Cotta Vy Lt" red="238" green="170" blue="155"/>
+  <thread id="3778" description="Terra Cotta Light" red="217" green="137" blue="120"/>
+  <thread id="356" description="Terra Cotta Med" red="197" green="106" blue="91"/>
+  <thread id="3830" description="Terra Cotta" red="185" green="85" blue="68"/>
+  <thread id="355" description="Terra Cotta Dark" red="152" green="68" blue="54"/>
+  <thread id="3777" description="Terra Cotta Vy Dk" red="134" green="48" blue="34"/>
+  <thread id="3779" description="Rosewood Ult Vy Lt" red="248" green="202" blue="200"/>
+  <thread id="3859" description="Rosewood Light" red="186" green="139" blue="124"/>
+  <thread id="3858" description="Rosewood Med" red="150" green="74" blue="63"/>
+  <thread id="3857" description="Rosewood Dark" red="104" green="37" blue="26"/>
+  <thread id="3774" description="Desert Sand Vy Lt" red="243" green="225" blue="215"/>
+  <thread id="950" description="Desert Sand Light" red="238" green="211" blue="196"/>
+  <thread id="3064" description="Desert Sand" red="196" green="142" blue="112"/>
+  <thread id="407" description="Desert Sand Med" red="187" green="129" blue="97"/>
+  <thread id="3773" description="Desert Sand Dark" red="182" green="117" blue="82"/>
+  <thread id="3772" description="Desert Sand Vy Dk" red="160" green="108" blue="80"/>
+  <thread id="632" description="Desert Sand Ult Vy Dk" red="135" green="85" blue="57"/>
+  <thread id="453" description="Shell Gray Light" red="215" green="206" blue="203"/>
+  <thread id="452" description="Shell Gray Med" red="192" green="179" blue="174"/>
+  <thread id="451" description="Shell Gray Dark" red="145" green="123" blue="115"/>
+  <thread id="3861" description="Cocoa Light" red="166" green="136" blue="129"/>
+  <thread id="3860" description="Cocoa" red="125" green="93" blue="87"/>
+  <thread id="779" description="Cocoa Dark" red="98" green="75" blue="69"/>
+  <thread id="712" description="Cream" red="255" green="251" blue="239"/>
+  <thread id="739" description="Tan Ult Vy Lt" red="248" green="228" blue="200"/>
+  <thread id="738" description="Tan Very Light" red="236" green="204" blue="158"/>
+  <thread id="437" description="Tan Light" red="228" green="187" blue="142"/>
+  <thread id="436" description="Tan" red="203" green="144" blue="81"/>
+  <thread id="435" description="Brown Very Light" red="184" green="119" blue="72"/>
+  <thread id="434" description="Brown Light" red="152" green="94" blue="51"/>
+  <thread id="433" description="Brown Med" red="122" green="69" blue="31"/>
+  <thread id="801" description="Coffee Brown Dk" red="101" green="57" blue="25"/>
+  <thread id="898" description="Coffee Brown Vy Dk" red="73" green="42" blue="19"/>
+  <thread id="938" description="Coffee Brown Ult Dk" red="54" green="31" blue="14"/>
+  <thread id="3371" description="Black Brown" red="30" green="17" blue="8"/>
+  <thread id="543" description="Beige Brown Ult Vy Lt" red="242" green="227" blue="206"/>
+  <thread id="3864" description="Mocha Beige Light" red="203" green="182" blue="156"/>
+  <thread id="3863" description="Mocha Beige Med" red="164" green="131" blue="92"/>
+  <thread id="3862" description="Mocha Beige Dark" red="138" green="110" blue="78"/>
+  <thread id="3031" description="Mocha Brown Vy Dk" red="75" green="60" blue="42"/>
+  <thread id="B5200" description="Snow White" red="255" green="255" blue="255"/>
+  <thread id="White" description="White" red="252" green="251" blue="248"/>
+  <thread id="3865" description="Winter White" red="249" green="247" blue="241"/>
+  <thread id="Ecru" description="Ecru" red="240" green="234" blue="218"/>
+  <thread id="822" description="Beige Gray Light" red="231" green="226" blue="211"/>
+  <thread id="644" description="Beige Gray Med" red="221" green="216" blue="203"/>
+  <thread id="642" description="Beige Gray Dark" red="164" green="152" blue="120"/>
+  <thread id="640" description="Beige Gray Vy Dk" red="133" green="123" blue="97"/>
+  <thread id="3787" description="Brown Gray Dark" red="98" green="93" blue="80"/>
+  <thread id="3021" description="Brown Gray Vy Dk" red="79" green="75" blue="65"/>
+  <thread id="3024" description="Brown Gray Vy Lt" red="235" green="234" blue="231"/>
+  <thread id="3023" description="Brown Gray Light" red="177" green="170" blue="151"/>
+  <thread id="3022" description="Brown Gray Med" red="142" green="144" blue="120"/>
+  <thread id="535" description="Ash Gray Vy Lt" red="99" green="100" blue="88"/>
+  <thread id="3033" description="Mocha Brown Vy Lt" red="227" green="216" blue="204"/>
+  <thread id="3782" description="Mocha Brown Lt" red="210" green="188" blue="166"/>
+  <thread id="3032" description="Mocha Brown Med" red="179" green="159" blue="139"/>
+  <thread id="3790" description="Beige Gray Ult Dk" red="127" green="106" blue="85"/>
+  <thread id="3781" description="Mocha Brown Dk" red="107" green="87" blue="67"/>
+  <thread id="3866" description="Mocha Brn Ult Vy Lt" red="250" green="246" blue="240"/>
+  <thread id="842" description="Beige Brown Vy Lt" red="209" green="186" blue="161"/>
+  <thread id="841" description="Beige Brown Lt" red="182" green="155" blue="126"/>
+  <thread id="840" description="Beige Brown Med" red="154" green="124" blue="92"/>
+  <thread id="839" description="Beige Brown Dk" red="103" green="85" blue="65"/>
+  <thread id="838" description="Beige Brown Vy Dk" red="89" green="73" blue="55"/>
+  <thread id="3072" description="Beaver Gray Vy Lt" red="230" green="232" blue="232"/>
+  <thread id="648" description="Beaver Gray Lt" red="188" green="180" blue="172"/>
+  <thread id="647" description="Beaver Gray Med" red="176" green="166" blue="156"/>
+  <thread id="646" description="Beaver Gray Dk" red="135" green="125" blue="115"/>
+  <thread id="645" description="Beaver Gray Vy Dk" red="110" green="101" blue="92"/>
+  <thread id="844" description="Beaver Gray Ult Dk" red="72" green="72" blue="72"/>
+  <thread id="762" description="Pearl Gray Vy Lt" red="236" green="236" blue="236"/>
+  <thread id="415" description="Pearl Gray" red="211" green="211" blue="214"/>
+  <thread id="318" description="Steel Gray Lt" red="171" green="171" blue="171"/>
+  <thread id="414" description="Steel Gray Dk" red="140" green="140" blue="140"/>
+  <thread id="168" description="Pewter Very Light" red="209" green="209" blue="209"/>
+  <thread id="169" description="Pewter Light" red="132" green="132" blue="132"/>
+  <thread id="317" description="Pewter Gray" red="108" green="108" blue="108"/>
+  <thread id="413" description="Pewter Gray Dark" red="86" green="86" blue="86"/>
+  <thread id="3799" description="Pewter Gray Vy Dk" red="66" green="66" blue="66"/>
+  <thread id="310" description="Black" red="0" green="0" blue="0"/>
+</manufacturer>

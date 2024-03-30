@@ -9,6 +9,12 @@
         m_parent->set_cursor(cursor);                                       \
     }                                                                       \
 
+#define MAKE_PALETTEBUTTON_CALLBACK(thread) [&] {                           \
+        XStitchEditorApplication* a = (XStitchEditorApplication*) m_parent; \
+        a->selected_thread = thread;                                        \
+        update_selected_thread_widget();                                    \
+    }                                                                       \
+
 void ToolWindow::initialise() {
     using namespace nanogui;
 
@@ -61,4 +67,45 @@ void ToolWindow::initialise() {
     toolbutton->set_callback(MAKE_TOOLBUTTON_CALLBACK(ToolOptions::ZOOM_OUT, Cursor::VResize));
 
     // Palette
+    label = new Label(this, "Selected Thread", "sans-bold");
+
+    Widget *selected_thread_widget = new Widget(this);
+    selected_thread_widget->set_layout(new BoxLayout(
+        Orientation::Horizontal, Alignment::Maximum, 0, 5));
+
+    _selected_thread_button = new DisabledButton(selected_thread_widget, "");
+    _selected_thread_label = new Label(selected_thread_widget, "");
+    update_selected_thread_widget();
+
+    label = new Label(this, "Palette", "sans-bold");
+
+    VScrollPanel *v_scroll = new VScrollPanel(this);
+    v_scroll->set_fixed_height(470);
+
+    Widget *palette_widget = new Widget(v_scroll);
+    GridLayout *palette_layout = new GridLayout(
+        Orientation::Horizontal, 5, Alignment::Maximum, 0, 5);
+    palette_layout->set_col_alignment({ Alignment::Minimum, Alignment::Minimum, Alignment::Maximum });
+    palette_widget->set_layout(palette_layout);
+};
+
+void ToolWindow::update_selected_thread_widget() {
+    // TODO: check selected thread on application
+    // if null:
+    _selected_thread_button->set_icon(FA_BAN);
+    _selected_thread_label->set_caption("");
+
+    // if thread selected:
+    // _selected_thread_button->set_icon(0);
+    // _selected_thread_label->set_caption("the number of the selected thread")
+    // _selected_thread_button->set_background_color(color of the selected thread)
+    // _selected_thread_button->set_caption("  ")
+};
+
+// Returns true if the mouse coordinates provided intersect with this window
+bool ToolWindow::mouse_over(int x, int y) {
+    Vector2i _pos = absolute_position();
+    Vector2i _size = size();
+
+    return x >= _pos[0] && y >= _pos[1] && x <= _pos[0] + _size[0] && y <= _pos[1] + _size[1];
 };

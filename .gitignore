@@ -13,8 +13,6 @@ _deps
 /.vscode
 __pycache__/
 /venv
-/ext
-/third_party
 # Prerequisites
 *.d
 
