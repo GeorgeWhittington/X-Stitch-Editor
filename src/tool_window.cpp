@@ -1,4 +1,5 @@
 #include <nanogui/nanogui.h>
+#include <iostream>
 
 #include "tool_window.hpp"
 #include "x_stitch_editor.hpp"
@@ -9,15 +10,14 @@
         m_parent->set_cursor(cursor);                                       \
     }                                                                       \
 
-#define MAKE_PALETTEBUTTON_CALLBACK(thread) [&] {                           \
-        XStitchEditorApplication* a = (XStitchEditorApplication*) m_parent; \
-        a->selected_thread = thread;                                        \
-        update_selected_thread_widget();                                    \
-    }                                                                       \
+using namespace nanogui;
+
+void PaletteButton::palettebutton_callback() {
+    _app->selected_thread = _thread;
+    _app->tool_window->update_selected_thread_widget();
+};
 
 void ToolWindow::initialise() {
-    using namespace nanogui;
-
     set_position(Vector2i(0, 0));
     set_layout(new GroupLayout(5, 5, 10, 0));
 
@@ -79,27 +79,62 @@ void ToolWindow::initialise() {
 
     label = new Label(this, "Palette", "sans-bold");
 
-    VScrollPanel *v_scroll = new VScrollPanel(this);
-    v_scroll->set_fixed_height(470);
+    set_palette();
 
-    Widget *palette_widget = new Widget(v_scroll);
+    // TODO: switch/edit palette button that launches a popup to do so?
+
+    // set_visible(false);
+};
+
+void ToolWindow::set_palette() {
+    if (palette_container != nullptr) {
+        delete palette_container;
+    }
+
+    VScrollPanel *palette_container = new VScrollPanel(this);
+    palette_container->set_fixed_height(470);
+
+    Widget *palette_widget = new Widget(palette_container);
     GridLayout *palette_layout = new GridLayout(
-        Orientation::Horizontal, 5, Alignment::Maximum, 0, 5);
+        Orientation::Horizontal, 3, Alignment::Maximum, 0, 5);
     palette_layout->set_col_alignment({ Alignment::Minimum, Alignment::Minimum, Alignment::Maximum });
     palette_widget->set_layout(palette_layout);
+
+    Label *label = new Label(palette_widget, "Company", "sans");
+    label = new Label(palette_widget, "Code", "sans");
+    label = new Label(palette_widget, "");
+
+    // TODO: take parameter which determines which threads are added here
+    auto threads = ((XStitchEditorApplication*)m_parent)->threads;
+    auto *DMC_threads = threads["DMC"];
+
+    for (const auto& manufacturers_threads : *DMC_threads) {
+        Thread *t = manufacturers_threads.second;
+
+        label = new Label(palette_widget, t->company, "sans");
+        label = new Label(palette_widget, t->number, "sans");
+
+        PaletteButton *button = new PaletteButton(palette_widget, "  ");
+        button->set_thread(t);
+        button->set_app(m_parent);
+        button->set_callback();
+        button->set_background_color(t->color());
+        button->set_tooltip(t->description);
+    }
 };
 
 void ToolWindow::update_selected_thread_widget() {
-    // TODO: check selected thread on application
-    // if null:
-    _selected_thread_button->set_icon(FA_BAN);
-    _selected_thread_label->set_caption("");
-
-    // if thread selected:
-    // _selected_thread_button->set_icon(0);
-    // _selected_thread_label->set_caption("the number of the selected thread")
-    // _selected_thread_button->set_background_color(color of the selected thread)
-    // _selected_thread_button->set_caption("  ")
+    Thread *t = ((XStitchEditorApplication*)m_parent)->selected_thread;
+    if (t == nullptr) {
+        _selected_thread_button->set_icon(FA_BAN);
+        _selected_thread_label->set_caption("");
+    } else {
+        _selected_thread_button->set_icon(0);
+        std::string thread_number = t->number;
+        _selected_thread_label->set_caption(thread_number);
+        _selected_thread_button->set_background_color(t->color());
+        _selected_thread_button->set_caption("  ");
+    }
 };
 
 // Returns true if the mouse coordinates provided intersect with this window

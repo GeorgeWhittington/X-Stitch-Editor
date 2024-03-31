@@ -12,6 +12,7 @@ add_definitions(${NANOGUI_EXTRA_DEFS})
 include_directories(${NANOGUI_EXTRA_INCS})
 
 add_subdirectory(third_party/tinyxml2)
+add_subdirectory(third_party/fmt)
 
 file(GLOB_RECURSE SOURCES src/*.cpp)
 
@@ -20,3 +21,4 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE nanogui ${NANOGUI_EXTRA_LIBS})
 target_link_libraries(${PROJECT_NAME} PRIVATE tinyxml2)
+target_link_libraries(${PROJECT_NAME} PRIVATE fmt)
