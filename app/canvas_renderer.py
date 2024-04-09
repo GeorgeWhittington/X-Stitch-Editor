@@ -299,7 +299,6 @@ class CanvasRenderer:
             self.render_cs_shader()
             if minor_grid_mark_pixel_distance >= 15:
                 self.render_minor_grid_shader()
-            if minor_grid_mark_pixel_distance >= 15:
                 self.render_major_grid_shader()
 
     def render_cs_shader(self):

@@ -6,14 +6,14 @@
 
 #define MAKE_TOOLBUTTON_CALLBACK(tool, cursor) [&] {                        \
         XStitchEditorApplication* a = (XStitchEditorApplication*) m_parent; \
-        a->selected_tool = tool;                                            \
+        a->_selected_tool = tool;                                           \
         m_parent->set_cursor(cursor);                                       \
     }                                                                       \
 
 using namespace nanogui;
 
 void PaletteButton::palettebutton_callback() {
-    _app->selected_thread = _thread;
+    _app->_selected_thread = _thread;
     _app->tool_window->update_selected_thread_widget();
 };
 
@@ -83,7 +83,7 @@ void ToolWindow::initialise() {
 
     // TODO: switch/edit palette button that launches a popup to do so?
 
-    // set_visible(false);
+    set_visible(false);
 };
 
 void ToolWindow::set_palette() {
@@ -124,7 +124,7 @@ void ToolWindow::set_palette() {
 };
 
 void ToolWindow::update_selected_thread_widget() {
-    Thread *t = ((XStitchEditorApplication*)m_parent)->selected_thread;
+    Thread *t = ((XStitchEditorApplication*)m_parent)->_selected_thread;
     if (t == nullptr) {
         _selected_thread_button->set_icon(FA_BAN);
         _selected_thread_label->set_caption("");
@@ -138,9 +138,10 @@ void ToolWindow::update_selected_thread_widget() {
 };
 
 // Returns true if the mouse coordinates provided intersect with this window
-bool ToolWindow::mouse_over(int x, int y) {
+bool ToolWindow::mouse_over(Vector2i position) {
     Vector2i _pos = absolute_position();
     Vector2i _size = size();
 
-    return x >= _pos[0] && y >= _pos[1] && x <= _pos[0] + _size[0] && y <= _pos[1] + _size[1];
+    return position[0] >= _pos[0] && position[1] >= _pos[1] && \
+           position[0] <= _pos[0] + _size[0] && position[1] <= _pos[1] + _size[1];
 };

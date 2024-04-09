@@ -39,7 +39,7 @@ class ToolWindow : public nanogui::Window {
 public:
     ToolWindow(nanogui::Widget *parent) : nanogui::Window(parent, "Tools") {};
     void initialise();
-    bool mouse_over(int x, int y);
+    bool mouse_over(Vector2i position);
     void set_palette();
     void update_selected_thread_widget();
 

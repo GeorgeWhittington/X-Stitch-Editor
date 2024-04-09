@@ -117,6 +117,7 @@ class Camera2D:
         mvc = ortho * scale * trans
         right, bottom, _, _ = mvc * glm.vec4(*position[1], 1.0)
         left, top, _, _ = mvc * glm.vec4(*position[3], 1.0)
+
         return left, right, top, bottom
 
     def get_scaled_device_dimensions(self) -> (int, int):
@@ -148,10 +149,10 @@ class Camera2D:
         """Returns the normalized device coordinates of a specified point on
         the screen, which is then scaled as it would be by the orthographic
         projection, returning None if the point is outside the bounds of the window"""
-        device_width, device_height = self.get_scaled_device_dimensions()
-
         if not self.device_coords_in_bounds(x, y):
             return None
+
+        device_width, device_height = self.get_scaled_device_dimensions()
 
         device_ratio = device_width / device_height
 

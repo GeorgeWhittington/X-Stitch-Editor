@@ -17,25 +17,39 @@ public:
 
 class ToolWindow;
 class MousePositionWindow;
+class SplashScreenWindow;
+class NewProjectWindow;
+class CanvasRenderer;
+struct Project;
 
 class XStitchEditorApplication : public nanogui::Screen {
 private:
-// selected thread
-
 // shader
 // project
-// canvas renderer
+    CanvasRenderer *_canvas_renderer;
 
     float _last_frame = 0.0f;
-    float _delta_frame = 0.0f;
+    float _time_delta = 0.0f;
 public:
     XStitchEditorApplication();
+    void create_windows();
     void load_all_threads();
+    void switch_project(Project *project);
+    virtual void draw(NVGcontext *ctx);
+    virtual void draw_contents();
+    virtual bool keyboard_event(int key, int scancode, int action, int modifiers);
+    virtual bool scroll_event(const nanogui::Vector2i &p, const nanogui::Vector2f &rel);
+    virtual bool mouse_button_event(const nanogui::Vector2i &p, int button, bool down, int modifiers);
+    virtual bool mouse_motion_event(const nanogui::Vector2i &p, const nanogui::Vector2i &rel, int button, int modifiers);
+    virtual bool resize_event(const nanogui::Vector2i &size);
 
     ToolWindow *tool_window;
     MousePositionWindow *mouse_position_window;
+    SplashScreenWindow *splashscreen_window;
+    NewProjectWindow *new_project_window;
 
-    ToolOptions selected_tool = ToolOptions::MOVE;
-    Thread *selected_thread;
+    Project *_project;
+    ToolOptions _selected_tool = ToolOptions::MOVE;
+    Thread *_selected_thread;
     std::map<std::string, std::map<std::string, Thread*>*> threads;
 };

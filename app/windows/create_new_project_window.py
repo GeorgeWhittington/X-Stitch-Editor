@@ -61,7 +61,6 @@ class CreateNewProjectWindow(nanogui.Window):
                 parent.perform_layout()
                 return
 
-            # TODO: check return value to see if project has been switched
             parent.switch_project(project)
 
             # reset form values
