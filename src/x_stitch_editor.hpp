@@ -32,7 +32,6 @@ private:
     float _time_delta = 0.0f;
 public:
     XStitchEditorApplication();
-    void create_windows();
     void load_all_threads();
     void switch_project(Project *project);
     virtual void draw(NVGcontext *ctx);

@@ -17,12 +17,7 @@
 
 using namespace nanogui;
 
-// XStitchEditorApplication::XStitchEditorApplication() : nanogui::Screen(Vector2i(1024, 748), "X Stitch Editor", true) {
-XStitchEditorApplication::XStitchEditorApplication() : nanogui::Screen() {
-    // TODO: move to .hpp
-};
-
-void XStitchEditorApplication::create_windows() {
+XStitchEditorApplication::XStitchEditorApplication() : nanogui::Screen(Vector2i(1024, 748), "X Stitch Editor", true) {
     load_all_threads();
 
     LargeIconTheme *theme = new LargeIconTheme(nvg_context());
@@ -46,7 +41,7 @@ void XStitchEditorApplication::create_windows() {
 
 void XStitchEditorApplication::load_all_threads() {
     std::map<std::string, Thread*> *dmc_threads = new std::map<std::string, Thread*>;
-    load_manufacturer("../assets/manufacturers/DMC.xml", dmc_threads);
+    load_manufacturer("/Users/george/Documents/uni_year_three/Digital Systems Project/X-Stitch-Editor/assets/DMC.xml", dmc_threads);
     threads["DMC"] = dmc_threads;
 };
 

@@ -15,12 +15,29 @@ add_subdirectory(third_party/tinyxml2)
 add_subdirectory(third_party/fmt)
 add_subdirectory(third_party/glm)
 
-file(GLOB_RECURSE SOURCES src/*.cpp)
+file(GLOB_RECURSE SOURCES src/*.cpp src/*.mm)
 
-add_executable(${PROJECT_NAME} ${SOURCES})
+set(ICON_NAME "icon.icns")
+set(ICON_PATH ${PROJECT_SOURCE_DIR}/assets/${ICON_NAME})
+set_source_files_properties(${ICON_PATH} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+file(COPY ${ICON_PATH} DESTINATION ${PROJECT_NAME}.app/Contents/Resources)
+
+add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${ICON_PATH} ${SOURCES})
+# add_executable(${PROJECT_NAME} ${SOURCES})
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    BUNDLE True
+    MACOSX_BUNDLE_GUI_IDENTIFIER uk.brickgrass.${PROJECT_NAME}
+    MACOSX_BUNDLE_BUNDLE_NAME ${PROJECT_NAME}
+    MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
+    MACOSX_BUNDLE_ICONFILE ${ICON_NAME}
+)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE nanogui ${NANOGUI_EXTRA_LIBS})
 target_link_libraries(${PROJECT_NAME} PRIVATE tinyxml2)
 target_link_libraries(${PROJECT_NAME} PRIVATE fmt)
 target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm-header-only)
+# TODO: target this so it only occurs on macos
+target_link_libraries(${PROJECT_NAME} PRIVATE "-framework Cocoa")
