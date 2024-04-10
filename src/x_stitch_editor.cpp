@@ -10,6 +10,7 @@
 #include "mouse_position_window.hpp"
 #include "splashscreen_window.hpp"
 #include "new_project_window.hpp"
+#include "main_menu_window.hpp"
 #include "canvas_renderer.hpp"
 #include "camera2d.hpp"
 #include "threads.hpp"
@@ -32,9 +33,13 @@ XStitchEditorApplication::XStitchEditorApplication() : nanogui::Screen(Vector2i(
     splashscreen_window = new SplashScreenWindow(this);
     splashscreen_window->initialise();
 
-    // create new project window
     new_project_window = new NewProjectWindow(this);
     new_project_window->initialise();
+
+    main_menu_window = new MainMenuWindow(this);
+    main_menu_window->initialise();
+
+    switch_application_state(ApplicationStates::LAUNCH);
 
     perform_layout();
 }
@@ -49,20 +54,71 @@ void XStitchEditorApplication::switch_project(Project *project) {
     // TODO: consider if this should be achieved with smart pointers?
     // is it bad that canvas_renderer depends on project and these could be
     // changed independently?
-    if (_project != nullptr)
+    if (_project != nullptr) {
         delete _project;
+        _project = nullptr;
+    }
 
-    if (_canvas_renderer != nullptr)
+    if (_canvas_renderer != nullptr) {
         delete _canvas_renderer;
+        _canvas_renderer = nullptr;
+    }
 
-    _project = project;
-    _canvas_renderer = new CanvasRenderer(this);
+    if (project != nullptr) {
+        _project = project;
+        _canvas_renderer = new CanvasRenderer(this);
+    }
+}
+
+void XStitchEditorApplication::switch_application_state(ApplicationStates state) {
+    switch (state) {
+        case ApplicationStates::LAUNCH:
+            splashscreen_window->set_visible(true);
+
+            tool_window->set_visible(false);
+            mouse_position_window->set_visible(false);
+            new_project_window->set_visible(false);
+            main_menu_window->set_visible(false);
+            break;
+
+        case ApplicationStates::CREATE_PROJECT:
+            new_project_window->set_visible(true);
+
+            splashscreen_window->set_visible(false);
+            tool_window->set_visible(false);
+            mouse_position_window->set_visible(false);
+            main_menu_window->set_visible(false);
+            break;
+
+        case ApplicationStates::PROJECT_OPEN:
+            tool_window->set_visible(true);
+            main_menu_window->set_visible(true);
+
+            new_project_window->set_visible(false);
+            splashscreen_window->set_visible(false);
+            break;
+
+        case ApplicationStates::CREATE_DITHERED_PROJECT:
+            // TODO
+            break;
+
+        case ApplicationStates::LOAD_PROJECT:
+            // TODO
+            break;
+
+        default:
+            break;
+    }
+    perform_layout();
 }
 
 void XStitchEditorApplication::draw(NVGcontext *ctx) {
     double current_frame = glfwGetTime();
     _time_delta = current_frame - _last_frame;
     _last_frame = current_frame;
+
+    // TODO: iterate visible windows, calculate if they are out of view
+    // if they are, put them back to their default position
 
     /* Draw the user interface */
     Screen::draw(ctx);
@@ -80,11 +136,10 @@ void XStitchEditorApplication::draw_contents() {
         // TODO: Find thread selected from _canvas_renderer data array instead
         Thread black = {"DMC", "310", "Black", 0, 0, 0};
 
-        Vector2i screen_size = framebuffer_size();
         mouse_position_window->set_captions(
             _canvas_renderer->_selected_stitch[0] + 1,
             _canvas_renderer->_selected_stitch[1] + 1,
-            (float)(screen_size[1]) / pixel_ratio(), &black);
+            &black);
     } else {
         mouse_position_window->set_visible(false);
     }
@@ -283,5 +338,6 @@ bool XStitchEditorApplication::mouse_motion_event(const Vector2i &p, const Vecto
 bool XStitchEditorApplication::resize_event(const nanogui::Vector2i &size) {
     splashscreen_window->center();
     new_project_window->center();
+    main_menu_window->position_top_left();
     return true;
 }

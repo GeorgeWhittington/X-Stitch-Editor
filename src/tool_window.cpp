@@ -82,8 +82,6 @@ void ToolWindow::initialise() {
     set_palette();
 
     // TODO: switch/edit palette button that launches a popup to do so?
-
-    set_visible(false);
 };
 
 void ToolWindow::set_palette() {

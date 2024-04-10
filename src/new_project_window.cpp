@@ -77,11 +77,8 @@ void NewProjectWindow::initialise() {
         _height_entry->set_value(100);
         _color_picker->set_color(CANVAS_DEFAULT_COLOR);
 
-        set_visible(false);
-        app->tool_window->set_visible(true);
-        app->perform_layout();
+        app->switch_application_state(ApplicationStates::PROJECT_OPEN);
     });
 
     center();
-    set_visible(false);
 }

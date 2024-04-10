@@ -1,6 +1,7 @@
 #pragma once
 #include <map>
 #include <string>
+
 #include <nanogui/nanogui.h>
 
 #include "constants.hpp"
@@ -19,13 +20,12 @@ class ToolWindow;
 class MousePositionWindow;
 class SplashScreenWindow;
 class NewProjectWindow;
+class MainMenuWindow;
 class CanvasRenderer;
 struct Project;
 
 class XStitchEditorApplication : public nanogui::Screen {
 private:
-// shader
-// project
     CanvasRenderer *_canvas_renderer;
 
     float _last_frame = 0.0f;
@@ -34,6 +34,7 @@ public:
     XStitchEditorApplication();
     void load_all_threads();
     void switch_project(Project *project);
+    void switch_application_state(ApplicationStates state);
     virtual void draw(NVGcontext *ctx);
     virtual void draw_contents();
     virtual bool keyboard_event(int key, int scancode, int action, int modifiers);
@@ -46,6 +47,7 @@ public:
     MousePositionWindow *mouse_position_window;
     SplashScreenWindow *splashscreen_window;
     NewProjectWindow *new_project_window;
+    MainMenuWindow *main_menu_window;
 
     Project *_project;
     ToolOptions _selected_tool = ToolOptions::MOVE;

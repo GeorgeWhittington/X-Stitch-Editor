@@ -6,7 +6,7 @@ class MousePositionWindow : public nanogui::Window {
 public:
     MousePositionWindow(nanogui::Widget *parent) : nanogui::Window(parent, "") {};
     void initialise();
-    void set_captions(int stitch_x, int stitch_y, int offset, Thread *thread = nullptr);
+    void set_captions(int stitch_x, int stitch_y, Thread *thread = nullptr);
 
 private:
     nanogui::Label *_mouse_location_label;
