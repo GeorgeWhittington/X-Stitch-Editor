@@ -46,4 +46,6 @@ __pycache__/
 *.out
 *.app
 
-.DS_Store
+*.DS_Store
+*.oxs
+*.OXS

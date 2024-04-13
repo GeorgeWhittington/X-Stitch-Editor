@@ -14,6 +14,12 @@ struct Thread {
     nanogui::Color color() {
         return nanogui::Color(nanogui::Vector3i(R, G, B));
     };
+
+    std::string global_id() {
+        return company + "." + number;
+    }
 };
+
+class XStitchEditorApplication;
 
 bool load_manufacturer(const char *file_path, std::map<std::string, Thread*> *map);

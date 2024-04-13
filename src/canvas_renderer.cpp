@@ -2,12 +2,12 @@
 #include <memory>
 #include <algorithm>
 #include <iostream>
-#include <vector>
 #include <exception>
 #include <nanogui/nanogui.h>
 #include "x_stitch_editor.hpp"
 #include "camera2d.hpp"
 #include "project.hpp"
+#include "threads.hpp"
 
 using namespace nanogui;
 
@@ -16,13 +16,12 @@ CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) {
     int width = app->_project->width;
     int height = app->_project->height;
     _camera = new Camera2D(_app, width, height);
-    _texture_data_array = std::make_unique<uint8_t[]>(width * height * 4);
 
     _texture = new Texture(
         Texture::PixelFormat::RGBA, Texture::ComponentFormat::UInt8,
         Vector2i(width, height),
         Texture::InterpolationMode::Bilinear, Texture::InterpolationMode::Nearest);
-    _texture->upload(_texture_data_array.get());
+    _texture->upload(_app->_project->texture_data_array.get());
 
     _render_pass = new RenderPass({ app });
     _render_pass->set_clear_color(0, Color(0.3f, 0.3f, 0.32f, 1.f));
@@ -162,27 +161,30 @@ Vector2i CanvasRenderer::get_mouse_position() {
     }
 }
 
-void CanvasRenderer::draw_to_canvas(Vector2i stitch, Thread *thread) {
-    // TODO: edit metadata array (once it exists)
-
-    int index = stitch[1] * _app->_project->width * 4 + stitch[0] * 4;
-    _texture_data_array[index] = thread->R;
-    _texture_data_array[index+1] = thread->G;
-    _texture_data_array[index+2] = thread->B;
-    _texture_data_array[index+3] = 255;
-
-    _texture->upload(_texture_data_array.get());
+Thread* CanvasRenderer::find_thread_at_position(Vector2i stitch) {
+    int palette_id = _app->_project->thread_data[stitch[0]][stitch[1]];
+    try {
+        Thread *t = _app->_project->palette.at(palette_id);
+        return t;
+    } catch (std::out_of_range&) {
+        // this shouldn't happen, but to be safe clear the stitch
+        // that contains a thread we don't know
+        erase_from_canvas(stitch);
+        return nullptr;
+    }
 }
 
-void CanvasRenderer::erase_from_canvas(Vector2i stitch) {
-    // TODO: edit metadata array (once it exists)
-    int index = stitch[1] * _app->_project->width * 4 + stitch[0] * 4;
-    _texture_data_array[index] = 0;
-    _texture_data_array[index+1] = 0;
-    _texture_data_array[index+2] = 0;
-    _texture_data_array[index+3] = 0;
+// TODO: Should app just call project.draw_stitch() directly and then
+// just call a method that uploads the texture?
+void CanvasRenderer::draw_to_canvas(Vector2i stitch, Thread *thread) {
+    _app->_project->draw_stitch(stitch, thread);
+    _texture->upload(_app->_project->texture_data_array.get());
+}
 
-    _texture->upload(_texture_data_array.get());
+// TODO: ditto above
+void CanvasRenderer::erase_from_canvas(Vector2i stitch) {
+    _app->_project->erase_stitch(stitch);
+    _texture->upload(_app->_project->texture_data_array.get());
 }
 
 void CanvasRenderer::render() {

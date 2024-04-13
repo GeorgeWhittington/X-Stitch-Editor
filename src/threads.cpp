@@ -1,9 +1,12 @@
 #include "threads.hpp"
+#include "x_stitch_editor.hpp"
 
+#include <sstream>
 #include <string>
 #include <map>
 
 #include <tinyxml2.h>
+#include <fmt/core.h>
 
 // TODO: error handling, return false if anything fails?
 // check file opened, check all attribute queries succeeded

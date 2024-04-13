@@ -18,7 +18,19 @@
 
 using namespace nanogui;
 
-XStitchEditorApplication::XStitchEditorApplication() : nanogui::Screen(Vector2i(1024, 748), "X Stitch Editor", true) {
+std::vector<std::pair<std::string, std::string>> permitted_files = {{"oxs", "Open Cross Stitch"}};
+
+void ExitToMainMenuWindow::initialise() {
+    set_position(Vector2i(10, 10));
+    set_layout(new BoxLayout(Orientation::Horizontal));
+    Button *b = new Button(this, "", FA_CHEVRON_LEFT);
+    b->set_callback([this](){
+        auto app = (XStitchEditorApplication*)m_parent;
+        app->switch_application_state(ApplicationStates::LAUNCH);
+    });
+};
+
+XStitchEditorApplication::XStitchEditorApplication() : Screen(Vector2i(1024, 748), "X Stitch Editor", true) {
     load_all_threads();
 
     LargeIconTheme *theme = new LargeIconTheme(nvg_context());
@@ -39,6 +51,9 @@ XStitchEditorApplication::XStitchEditorApplication() : nanogui::Screen(Vector2i(
     main_menu_window = new MainMenuWindow(this);
     main_menu_window->initialise();
 
+    exit_to_main_menu_window = new ExitToMainMenuWindow(this);
+    exit_to_main_menu_window->initialise();
+
     switch_application_state(ApplicationStates::LAUNCH);
 
     perform_layout();
@@ -47,13 +62,13 @@ XStitchEditorApplication::XStitchEditorApplication() : nanogui::Screen(Vector2i(
 void XStitchEditorApplication::load_all_threads() {
     std::map<std::string, Thread*> *dmc_threads = new std::map<std::string, Thread*>;
     load_manufacturer("/Users/george/Documents/uni_year_three/Digital Systems Project/X-Stitch-Editor/assets/DMC.xml", dmc_threads);
-    threads["DMC"] = dmc_threads;
+    _threads["DMC"] = dmc_threads;
 };
 
 void XStitchEditorApplication::switch_project(Project *project) {
-    // TODO: consider if this should be achieved with smart pointers?
-    // is it bad that canvas_renderer depends on project and these could be
-    // changed independently?
+    _selected_thread = nullptr;
+    tool_window->update_selected_thread_widget();
+
     if (_project != nullptr) {
         delete _project;
         _project = nullptr;
@@ -67,10 +82,26 @@ void XStitchEditorApplication::switch_project(Project *project) {
     if (project != nullptr) {
         _project = project;
         _canvas_renderer = new CanvasRenderer(this);
+        tool_window->set_palette();
     }
 }
 
 void XStitchEditorApplication::switch_application_state(ApplicationStates state) {
+    if (_previous_state == ApplicationStates::PROJECT_OPEN) {
+        main_menu_window->_file_button->set_pushed(false);
+        main_menu_window->_edit_button->set_pushed(false);
+        main_menu_window->_view_button->set_pushed(false);
+        main_menu_window->_menu_button->set_pushed(false);
+    }
+
+    if (_previous_state == ApplicationStates::CREATE_PROJECT)
+        new_project_window->reset_form();
+
+    // Reposition all windows to default
+    splashscreen_window->center();
+    new_project_window->center();
+    main_menu_window->position_top_left();
+
     switch (state) {
         case ApplicationStates::LAUNCH:
             splashscreen_window->set_visible(true);
@@ -79,10 +110,12 @@ void XStitchEditorApplication::switch_application_state(ApplicationStates state)
             mouse_position_window->set_visible(false);
             new_project_window->set_visible(false);
             main_menu_window->set_visible(false);
+            exit_to_main_menu_window->set_visible(false);
             break;
 
         case ApplicationStates::CREATE_PROJECT:
             new_project_window->set_visible(true);
+            exit_to_main_menu_window->set_visible(true);
 
             splashscreen_window->set_visible(false);
             tool_window->set_visible(false);
@@ -91,25 +124,46 @@ void XStitchEditorApplication::switch_application_state(ApplicationStates state)
             break;
 
         case ApplicationStates::PROJECT_OPEN:
-            tool_window->set_visible(true);
             main_menu_window->set_visible(true);
+
+            tool_window->set_visible(true);
 
             new_project_window->set_visible(false);
             splashscreen_window->set_visible(false);
+            exit_to_main_menu_window->set_visible(false);
             break;
 
         case ApplicationStates::CREATE_DITHERED_PROJECT:
             // TODO
             break;
 
-        case ApplicationStates::LOAD_PROJECT:
-            // TODO
-            break;
-
         default:
             break;
     }
+
+    _previous_state = state;
     perform_layout();
+}
+
+void XStitchEditorApplication::open_project() {
+    std::string path = nanogui::file_dialog(permitted_files, false);
+
+    if (path == "")
+        return;
+
+    Project *project;
+
+    try {
+        project = new Project(path.c_str(), &_threads);
+    } catch (const std::runtime_error& err) {
+        // TODO: plus all other errors the constructor raises
+        // And put the error msg into a popup
+        std::cerr << err.what() << std::endl;
+        return;
+    }
+
+    switch_project(project);
+    switch_application_state(ApplicationStates::PROJECT_OPEN);
 }
 
 void XStitchEditorApplication::draw(NVGcontext *ctx) {
@@ -133,13 +187,10 @@ void XStitchEditorApplication::draw_contents() {
     _canvas_renderer->render();
 
     if (_canvas_renderer->_selected_stitch != NO_STITCH_SELECTED) {
-        // TODO: Find thread selected from _canvas_renderer data array instead
-        Thread black = {"DMC", "310", "Black", 0, 0, 0};
-
         mouse_position_window->set_captions(
             _canvas_renderer->_selected_stitch[0] + 1,
             _canvas_renderer->_selected_stitch[1] + 1,
-            &black);
+            _canvas_renderer->find_thread_at_position(_canvas_renderer->_selected_stitch));
     } else {
         mouse_position_window->set_visible(false);
     }
@@ -158,6 +209,24 @@ bool XStitchEditorApplication::keyboard_event(int key, int scancode, int action,
     if (_canvas_renderer == nullptr)
         return false;
 
+#if defined(__APPLE__)
+    auto control_command_key = GLFW_MOD_SUPER;
+#else
+    auto control_command_key = GLFW_MOD_CONTROL;
+#endif
+
+    // save on ctrl+S or cmd+S
+    if (key == GLFW_KEY_S && action == GLFW_PRESS && modifiers & control_command_key) {
+        if (_project->file_path == "") {
+            std::string path = nanogui::file_dialog(permitted_files, true);
+
+            if (path != "")
+                _project->save(path.c_str(), this);
+        } else {
+            _project->save(_project->file_path.c_str(), this);
+        }
+    }
+
     Camera2D *camera = _canvas_renderer->_camera;
     float camera_speed = 2 * _time_delta;
 
@@ -170,15 +239,9 @@ bool XStitchEditorApplication::keyboard_event(int key, int scancode, int action,
     if (key == GLFW_KEY_DOWN)
         camera->pan_camera(Vector2f(0, camera_speed), _canvas_renderer->_position);
 
-#if defined(__APPLE__)
-    auto control_command_key = GLFW_MOD_SUPER;
-#else
-    auto control_command_key = GLFW_MOD_CONTROL;
-#endif
-
-    if (key == GLFW_KEY_EQUAL && modifiers == control_command_key)
+    if (key == GLFW_KEY_EQUAL && modifiers & control_command_key)
         camera->zoom_to_point(Vector2f(0, 0), 1.f + camera_speed, _canvas_renderer->_position);
-    if (key == GLFW_KEY_MINUS && modifiers == control_command_key)
+    if (key == GLFW_KEY_MINUS && modifiers & control_command_key)
         camera->zoom_to_point(Vector2f(0, 0), 1.f - camera_speed, _canvas_renderer->_position);
 
     return false;

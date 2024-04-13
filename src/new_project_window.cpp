@@ -72,13 +72,16 @@ void NewProjectWindow::initialise() {
 
         app->switch_project(project);
 
-        _title_entry->set_value("");
-        _width_entry->set_value(100);
-        _height_entry->set_value(100);
-        _color_picker->set_color(CANVAS_DEFAULT_COLOR);
-
         app->switch_application_state(ApplicationStates::PROJECT_OPEN);
     });
 
     center();
+}
+
+void NewProjectWindow::reset_form() {
+    _errors->set_visible(false);
+    _title_entry->set_value("");
+    _width_entry->set_value(100);
+    _height_entry->set_value(100);
+    _color_picker->set_color(CANVAS_DEFAULT_COLOR);
 }

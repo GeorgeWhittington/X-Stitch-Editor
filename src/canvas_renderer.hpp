@@ -13,6 +13,7 @@ const Vector2i NO_STITCH_SELECTED = Vector2i(-1, -1);
 class CanvasRenderer {
 public:
     CanvasRenderer(XStitchEditorApplication *app);
+    Thread* find_thread_at_position(Vector2i stitch);
     void draw_to_canvas(Vector2i stitch, Thread *thread);
     void erase_from_canvas(Vector2i stitch);
     void render();
@@ -34,9 +35,6 @@ private:
     nanogui::Shader *_minor_grid_shader;
     nanogui::Shader *_major_grid_shader;
     nanogui::Texture *_texture;
-
-    // std::unique_ptr _thread_data;
-    std::unique_ptr<uint8_t[]> _texture_data_array;
 
     float _canvas_height_ndc;
     float _minor_grid_mark_distance;

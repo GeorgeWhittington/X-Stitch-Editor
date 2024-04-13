@@ -9,6 +9,11 @@ public:
     void initialise();
     void position_top_left();
 
+    nanogui::PopupButton *_menu_button;
+    nanogui::PopupButton *_file_button;
+    nanogui::PopupButton *_edit_button;
+    nanogui::PopupButton *_view_button;
+
 private:
     XStitchEditorApplication *_app;
 

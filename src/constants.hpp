@@ -15,6 +15,5 @@ enum ApplicationStates {
     LAUNCH,
     CREATE_PROJECT,
     CREATE_DITHERED_PROJECT,
-    LOAD_PROJECT,
     PROJECT_OPEN
 };

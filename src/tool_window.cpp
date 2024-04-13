@@ -3,6 +3,7 @@
 
 #include "tool_window.hpp"
 #include "x_stitch_editor.hpp"
+#include "project.hpp"
 
 #define MAKE_TOOLBUTTON_CALLBACK(tool, cursor) [&] {                        \
         XStitchEditorApplication* a = (XStitchEditorApplication*) m_parent; \
@@ -15,6 +16,17 @@ using namespace nanogui;
 void PaletteButton::palettebutton_callback() {
     _app->_selected_thread = _thread;
     _app->tool_window->update_selected_thread_widget();
+};
+
+void EditPaletteButton::palettebutton_callback() {
+    for (Thread *t : _app->_project->palette) {
+        if (t->company == _thread->company && t->number == _thread->number)
+            return;
+    }
+    _app->_project->palette.push_back(_thread);
+    _app->tool_window->set_palette();
+    _app->tool_window->_add_to_palette_button->set_pushed(false);
+    _app->perform_layout();
 };
 
 void ToolWindow::initialise() {
@@ -79,22 +91,54 @@ void ToolWindow::initialise() {
 
     label = new Label(this, "Palette", "sans-bold");
 
-    set_palette();
+    _add_to_palette_button = new PopupButton(this, "Add to Palette");
+    _add_to_palette_button->set_chevron_icon(0);
+    VScrollPanel *popup_scroll = new VScrollPanel(_add_to_palette_button->popup());
+    Widget *popup = new Widget(popup_scroll);
+    popup->set_layout(new BoxLayout(Orientation::Vertical, Alignment::Middle, 5, 5));
+    popup->set_fixed_height(500);
 
-    // TODO: switch/edit palette button that launches a popup to do so?
+    auto app = ((XStitchEditorApplication*)m_parent);
+
+    for (const auto & [manufacturer, man_threads] : app->_threads) {
+        Label *popup_label = new Label(popup, manufacturer, "sans-bold");
+        Widget *man_widget = new Widget(popup);
+        man_widget->set_layout(new GridLayout(Orientation::Horizontal, 7, Alignment::Maximum, 0, 5));
+
+        for (const auto & [key, thread] : *man_threads) {
+            Widget *thread_widget = new Widget(man_widget);
+            thread_widget->set_layout(new BoxLayout(Orientation::Vertical, Alignment::Middle, 2, 5));
+            EditPaletteButton *popup_thread = new EditPaletteButton(thread_widget);
+            popup_thread->set_thread(thread);
+            popup_thread->set_app(app);
+            popup_thread->set_callback();
+            popup_thread->set_background_color(thread->color());
+            popup_thread->set_tooltip(thread->description);
+            popup_label = new Label(thread_widget, thread->number);
+        }
+    }
+
+    // TODO: way to remove thread from palette
 };
 
 void ToolWindow::set_palette() {
-    if (palette_container != nullptr) {
-        delete palette_container;
+    if (_palette_container != nullptr) {
+        remove_child(_palette_container);
     }
 
-    VScrollPanel *palette_container = new VScrollPanel(this);
-    palette_container->set_fixed_height(470);
+    _palette_container = new VScrollPanel(this);
 
-    Widget *palette_widget = new Widget(palette_container);
+    auto app = ((XStitchEditorApplication*)m_parent);
+    std::vector<Thread*> threads = app->_project->palette;
+
+    if (threads.size() < 1) {
+        app->perform_layout();
+        return;
+    }
+
+    Widget *palette_widget = new Widget(_palette_container);
     GridLayout *palette_layout = new GridLayout(
-        Orientation::Horizontal, 3, Alignment::Maximum, 0, 5);
+        Orientation::Horizontal, 3, Alignment::Maximum, 5, 5);
     palette_layout->set_col_alignment({ Alignment::Minimum, Alignment::Minimum, Alignment::Maximum });
     palette_widget->set_layout(palette_layout);
 
@@ -102,23 +146,22 @@ void ToolWindow::set_palette() {
     label = new Label(palette_widget, "Code", "sans");
     label = new Label(palette_widget, "");
 
-    // TODO: take parameter which determines which threads are added here
-    auto threads = ((XStitchEditorApplication*)m_parent)->threads;
-    auto *DMC_threads = threads["DMC"];
-
-    for (const auto& manufacturers_threads : *DMC_threads) {
-        Thread *t = manufacturers_threads.second;
-
+    for (Thread *t : threads) {
         label = new Label(palette_widget, t->company, "sans");
         label = new Label(palette_widget, t->number, "sans");
 
-        PaletteButton *button = new PaletteButton(palette_widget, "  ");
+        PaletteButton *button = new PaletteButton(palette_widget);
         button->set_thread(t);
         button->set_app(m_parent);
         button->set_callback();
         button->set_background_color(t->color());
         button->set_tooltip(t->description);
     }
+
+    if (threads.size() > 10)
+        _palette_container->set_fixed_height(470);
+
+    app->perform_layout();
 };
 
 void ToolWindow::update_selected_thread_widget() {
@@ -126,6 +169,7 @@ void ToolWindow::update_selected_thread_widget() {
     if (t == nullptr) {
         _selected_thread_button->set_icon(FA_BAN);
         _selected_thread_label->set_caption("");
+        _selected_thread_button->set_background_color(Color(0, 0));
     } else {
         _selected_thread_button->set_icon(0);
         std::string thread_number = t->number;

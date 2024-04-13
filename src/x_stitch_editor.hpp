@@ -23,10 +23,19 @@ class NewProjectWindow;
 class MainMenuWindow;
 class CanvasRenderer;
 struct Project;
+class XStitchEditorApplication;
+
+class ExitToMainMenuWindow : public nanogui::Window {
+public:
+    ExitToMainMenuWindow(nanogui::Widget *parent, const std::string title = "") : nanogui::Window(parent, title) {};
+    void initialise();
+};
 
 class XStitchEditorApplication : public nanogui::Screen {
 private:
     CanvasRenderer *_canvas_renderer;
+
+    ApplicationStates _previous_state = ApplicationStates::LAUNCH;
 
     float _last_frame = 0.0f;
     float _time_delta = 0.0f;
@@ -35,6 +44,7 @@ public:
     void load_all_threads();
     void switch_project(Project *project);
     void switch_application_state(ApplicationStates state);
+    void open_project();
     virtual void draw(NVGcontext *ctx);
     virtual void draw_contents();
     virtual bool keyboard_event(int key, int scancode, int action, int modifiers);
@@ -48,9 +58,10 @@ public:
     SplashScreenWindow *splashscreen_window;
     NewProjectWindow *new_project_window;
     MainMenuWindow *main_menu_window;
+    ExitToMainMenuWindow *exit_to_main_menu_window;
 
     Project *_project;
     ToolOptions _selected_tool = ToolOptions::MOVE;
     Thread *_selected_thread;
-    std::map<std::string, std::map<std::string, Thread*>*> threads;
+    std::map<std::string, std::map<std::string, Thread*>*> _threads;
 };

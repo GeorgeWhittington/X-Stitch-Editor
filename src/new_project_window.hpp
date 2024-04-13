@@ -5,6 +5,7 @@ class NewProjectWindow : public nanogui::Window {
 public:
     NewProjectWindow(nanogui::Widget *parent) : nanogui::Window(parent, "") {};
     void initialise();
+    void reset_form();
 
 private:
     nanogui::Label *_errors;

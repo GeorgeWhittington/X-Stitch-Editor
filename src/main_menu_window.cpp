@@ -2,8 +2,13 @@
 #include "x_stitch_editor.hpp"
 #include "tool_window.hpp"
 #include <GLFW/glfw3.h>
+#include <vector>
+#include <iostream>
+#include "project.hpp"
 
 using nanogui::Vector2i;
+
+extern std::vector<std::pair<std::string, std::string>> permitted_files;
 
 void MainMenuWindow::initialise() {
     position_top_left();
@@ -12,19 +17,19 @@ void MainMenuWindow::initialise() {
         nanogui::Orientation::Horizontal,
         nanogui::Alignment::Fill, 0, 0));
 
-    nanogui::PopupButton *button = new nanogui::PopupButton(this, "", FA_BARS);
-    button->set_chevron_icon(0);
-    button->set_side(nanogui::Popup::Side::Left);
-    nanogui::Popup *menu = button->popup();
+    _menu_button = new nanogui::PopupButton(this, "", FA_BARS);
+    _menu_button->set_chevron_icon(0);
+    _menu_button->set_side(nanogui::Popup::Side::Left);
+    nanogui::Popup *menu = _menu_button->popup();
     menu->set_layout(new nanogui::BoxLayout(
         nanogui::Orientation::Vertical,
         nanogui::Alignment::Fill, 5, 5));
     menu->set_anchor_offset(15);
 
-    button = new nanogui::PopupButton(menu, "File");
-    button->set_chevron_icon(0);
-    button->set_side(nanogui::Popup::Side::Left);
-    nanogui::Popup *sub_menu = button->popup();
+    _file_button = new nanogui::PopupButton(menu, "File");
+    _file_button->set_chevron_icon(0);
+    _file_button->set_side(nanogui::Popup::Side::Left);
+    nanogui::Popup *sub_menu = _file_button->popup();
     sub_menu->set_layout(new nanogui::BoxLayout(
         nanogui::Orientation::Vertical,
         nanogui::Alignment::Fill, 5, 5));
@@ -45,10 +50,10 @@ void MainMenuWindow::initialise() {
     menu_button = new nanogui::Button(sub_menu, "Export to PDF");
     menu_button->set_callback([this](){ export_to_pdf(); });
 
-    button = new nanogui::PopupButton(menu, "Edit");
-    button->set_chevron_icon(0);
-    button->set_side(nanogui::Popup::Side::Left);
-    sub_menu = button->popup();
+    _edit_button = new nanogui::PopupButton(menu, "Edit");
+    _edit_button->set_chevron_icon(0);
+    _edit_button->set_side(nanogui::Popup::Side::Left);
+    sub_menu = _edit_button->popup();
     sub_menu->set_layout(new nanogui::BoxLayout(
         nanogui::Orientation::Vertical,
         nanogui::Alignment::Fill, 5, 5));
@@ -56,14 +61,15 @@ void MainMenuWindow::initialise() {
     menu_button = new nanogui::Button(sub_menu, "Undo");
     menu_button = new nanogui::Button(sub_menu, "Redo");
 
-    button = new nanogui::PopupButton(menu, "View");
-    button->set_chevron_icon(0);
-    button->set_side(nanogui::Popup::Side::Left);
-    sub_menu = button->popup();
+    _view_button = new nanogui::PopupButton(menu, "View");
+    _view_button->set_chevron_icon(0);
+    _view_button->set_side(nanogui::Popup::Side::Left);
+    sub_menu = _view_button->popup();
     sub_menu->set_layout(new nanogui::BoxLayout(
         nanogui::Orientation::Vertical,
         nanogui::Alignment::Fill, 5, 5));
 
+    // TODO: save ptr to each of these so that a check mark can be drawn when the things they control are visible
     menu_button = new nanogui::Button(sub_menu, "Show Tools");
     menu_button->set_callback([this](){ toggle_tools(); });
     menu_button = new nanogui::Button(sub_menu, "Show Minimap");
@@ -79,7 +85,11 @@ void MainMenuWindow::position_top_left() {
 }
 
 void MainMenuWindow::new_project() {
-    // TODO
+    // TODO: Check if user wants to save current project
+
+    XStitchEditorApplication* app = (XStitchEditorApplication*) m_parent;
+    app->switch_project(nullptr);
+    app->switch_application_state(ApplicationStates::CREATE_PROJECT);
 }
 
 void MainMenuWindow::new_project_from_image() {
@@ -87,7 +97,10 @@ void MainMenuWindow::new_project_from_image() {
 }
 
 void MainMenuWindow::open_project() {
-    // TODO
+    // TODO: Check if user wants to save current project
+
+    XStitchEditorApplication* app = (XStitchEditorApplication*) m_parent;
+    app->open_project();
 }
 
 void MainMenuWindow::close_project() {
@@ -98,11 +111,17 @@ void MainMenuWindow::close_project() {
 }
 
 void MainMenuWindow::save() {
-    // TODO
+    if (_app->_project->file_path == "") {
+        save_as();
+    } else {
+        _app->_project->save(_app->_project->file_path.c_str(), _app);
+    }
 }
 
 void MainMenuWindow::save_as() {
-    // TODO
+    std::string path = nanogui::file_dialog(permitted_files, true);
+    if (path != "")
+        _app->_project->save(path.c_str(), _app);
 }
 
 void MainMenuWindow::export_to_pdf() {
