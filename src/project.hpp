@@ -38,8 +38,9 @@ struct Project
     Project(std::string title_, int width_, int height_, nanogui::Color bg_color_);
     Project(const char *project_path, std::map<std::string, std::map<std::string, Thread*>*> *threads);
     void draw_stitch(Vector2i stitch, Thread *thread);
-    void draw_stitch_manual(Vector2i stitch, int index_2d, Thread *thread);
     void erase_stitch(Vector2i stitch);
+    void fill_from_stitch(Vector2i stitch, Thread *thread);
+    Thread* find_thread_at_stitch(Vector2i stitch);
     void save(const char *filepath, XStitchEditorApplication *app);
     bool is_stitch_valid(Vector2i stitch);
 };

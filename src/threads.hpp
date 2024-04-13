@@ -22,4 +22,4 @@ struct Thread {
 
 class XStitchEditorApplication;
 
-bool load_manufacturer(const char *file_path, std::map<std::string, Thread*> *map);
+std::string load_manufacturer(const char *file_path, std::map<std::string, Thread*> *map);

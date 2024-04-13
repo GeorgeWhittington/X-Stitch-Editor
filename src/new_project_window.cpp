@@ -46,8 +46,6 @@ void NewProjectWindow::initialise() {
     label = new Label(form_widget, "Canvas Background Colour:");
     _color_picker = new ColorPicker(form_widget, CANVAS_DEFAULT_COLOR);
 
-    // TODO: Select palette from a list?
-
     Button *confirm_button = new Button(this, "Confirm");
     confirm_button->set_callback([this](){
         _errors->set_visible(false);

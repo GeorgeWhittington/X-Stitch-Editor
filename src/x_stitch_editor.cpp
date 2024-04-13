@@ -4,6 +4,7 @@
 
 #include <nanogui/nanogui.h>
 #include <nanogui/opengl.h>
+#include <fmt/core.h>
 
 #include "x_stitch_editor.hpp"
 #include "tool_window.hpp"
@@ -60,9 +61,18 @@ XStitchEditorApplication::XStitchEditorApplication() : Screen(Vector2i(1024, 748
 }
 
 void XStitchEditorApplication::load_all_threads() {
+    // TODO: once installed designate a folder to contain manufacturer.xml files
+    // and attempt to load all of those here. If a user adds a new manufacturer file
+    // and it is valid then it should be copied to this folder
+
     std::map<std::string, Thread*> *dmc_threads = new std::map<std::string, Thread*>;
-    load_manufacturer("/Users/george/Documents/uni_year_three/Digital Systems Project/X-Stitch-Editor/assets/DMC.xml", dmc_threads);
-    _threads["DMC"] = dmc_threads;
+    try {
+        std::string manufacturer_name = load_manufacturer("/Users/george/Documents/uni_year_three/Digital Systems Project/X-Stitch-Editor/assets/DMC.xml", dmc_threads);
+        _threads[manufacturer_name] = dmc_threads;
+    } catch (std::runtime_error& err) {
+        delete dmc_threads;
+        std::cerr << fmt::format("Could not load thread manufacturer DMC: {}", err.what()) << std::endl;
+    }
 };
 
 void XStitchEditorApplication::switch_project(Project *project) {
@@ -190,7 +200,7 @@ void XStitchEditorApplication::draw_contents() {
         mouse_position_window->set_captions(
             _canvas_renderer->_selected_stitch[0] + 1,
             _canvas_renderer->_selected_stitch[1] + 1,
-            _canvas_renderer->find_thread_at_position(_canvas_renderer->_selected_stitch));
+            _project->find_thread_at_stitch(_canvas_renderer->_selected_stitch));
     } else {
         mouse_position_window->set_visible(false);
     }
@@ -309,17 +319,21 @@ bool XStitchEditorApplication::mouse_button_event(const Vector2i &p, int button,
 
         switch(_selected_tool) {
             case ToolOptions::SINGLE_STITCH:
-                if (_selected_thread != nullptr)
-                    _canvas_renderer->draw_to_canvas(selected_stitch, _selected_thread);
+                if (_selected_thread != nullptr) {
+                    _project->draw_stitch(selected_stitch, _selected_thread);
+                    _canvas_renderer->upload_texture();
+                }
                 break;
             case ToolOptions::BACK_STITCH:
                 // TODO
                 break;
             case ToolOptions::ERASE:
-                _canvas_renderer->erase_from_canvas(selected_stitch);
+                _project->erase_stitch(selected_stitch);
+                _canvas_renderer->upload_texture();
                 break;
             case ToolOptions::FILL:
-                _canvas_renderer->fill_from_point(selected_stitch, _selected_thread);
+                _project->fill_from_stitch(selected_stitch, _selected_thread);
+                _canvas_renderer->upload_texture();
                 break;
             default:
                 break;
@@ -385,11 +399,16 @@ bool XStitchEditorApplication::mouse_motion_event(const Vector2i &p, const Vecto
 
         switch(_selected_tool) {
             case ToolOptions::SINGLE_STITCH:
-                if (_selected_thread != nullptr)
-                    _canvas_renderer->draw_to_canvas(selected_stitch, _selected_thread);
+                if (_selected_thread != nullptr) {
+                    _project->draw_stitch(selected_stitch, _selected_thread);
+                    _canvas_renderer->upload_texture();
+                }
                 break;
             case ToolOptions::ERASE:
-                _canvas_renderer->erase_from_canvas(selected_stitch);
+                _project->erase_stitch(selected_stitch);
+                _canvas_renderer->upload_texture();
+
+                break;
             default:
                 break;
         }

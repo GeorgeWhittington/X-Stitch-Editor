@@ -3,6 +3,15 @@
 #include "x_stitch_editor.hpp"
 #include <fmt/core.h>
 #include <iostream>
+#include <queue>
+#include <vector>
+#include <set>
+
+struct Vector2iCompare {
+    bool operator() (const Vector2i& lhs, const Vector2i& rhs) const {
+        return lhs[0] + lhs[1] < rhs[0] + rhs[1];
+    }
+};
 
 std::string retrieve_string_attribute(tinyxml2::XMLElement *element, const char *key) {
     const char *string_attr;
@@ -130,6 +139,8 @@ Project::Project(const char *project_path, std::map<std::string, std::map<std::s
                 break;
         }
     }
+
+    // TODO: Read backstitch data
 };
 
 void Project::draw_stitch(Vector2i stitch, Thread *thread) {
@@ -161,6 +172,58 @@ void Project::erase_stitch(Vector2i stitch) {
     texture_data_array[index+1] = 0;
     texture_data_array[index+2] = 0;
     texture_data_array[index+3] = 0;
+}
+
+void Project::fill_from_stitch(Vector2i stitch, Thread *thread) {
+    Thread *target_thread = find_thread_at_stitch(stitch);
+
+    if (target_thread == thread)
+        return;
+
+    std::queue<Vector2i> unvisited;
+    std::set<Vector2i, Vector2iCompare> visited;
+
+    unvisited.push(stitch);
+
+    while(unvisited.size() > 0) {
+        Vector2i current = unvisited.front();
+        Thread *current_thread = find_thread_at_stitch(current);
+
+        if (current_thread != target_thread) {
+            // not part of fill area, don't change this or look at its surrounding pixels
+            unvisited.pop();
+            continue;
+        }
+
+        Vector2i touching[4] = {
+            {current[0] - 1, current[1]},
+            {current[0] + 1, current[1]},
+            {current[0], current[1] + 1},
+            {current[0], current[1] - 1}
+        };
+
+        for (const Vector2i& s : touching) {
+            if (is_stitch_valid(s) && !visited.contains(s))
+                unvisited.push(s);
+        }
+
+        draw_stitch(current, thread);
+
+        unvisited.pop();
+    }
+}
+
+Thread* Project::find_thread_at_stitch(Vector2i stitch) {
+    int palette_id = thread_data[stitch[0]][stitch[1]];
+    try {
+        Thread *t = palette.at(palette_id);
+        return t;
+    } catch (std::out_of_range&) {
+        // this shouldn't happen, but to be safe clear the stitch
+        // that contains a thread we don't know
+        erase_stitch(stitch);
+        return nullptr;
+    }
 }
 
 void Project::save(const char *filepath, XStitchEditorApplication *app) {
@@ -234,6 +297,8 @@ void Project::save(const char *filepath, XStitchEditorApplication *app) {
             stitch_element->SetAttribute("palindex", palette_index + 1);
         }
     }
+
+    // TODO: Write backstitch data
 
     doc.SaveFile(filepath);
 }

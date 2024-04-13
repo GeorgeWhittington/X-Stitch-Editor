@@ -27,8 +27,8 @@ private:
     void new_project_from_image();
     void open_project();
     void close_project();
-    void save();
-    void save_as();
+    bool save();
+    bool save_as();
     void export_to_pdf();
 
     void toggle_tools();

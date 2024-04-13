@@ -12,10 +12,7 @@ const Vector2i NO_STITCH_SELECTED = Vector2i(-1, -1);
 class CanvasRenderer {
 public:
     CanvasRenderer(XStitchEditorApplication *app);
-    Thread* find_thread_at_position(Vector2i stitch);
-    void draw_to_canvas(Vector2i stitch, Thread *thread);
-    void erase_from_canvas(Vector2i stitch);
-    void fill_from_point(Vector2i stitch, Thread *thread);
+    void upload_texture();
     void render();
 
     Camera2D *_camera;

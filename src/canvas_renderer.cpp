@@ -13,12 +13,6 @@
 
 using namespace nanogui;
 
-struct Vector2iCompare {
-    bool operator() (const Vector2i& lhs, const Vector2i& rhs) const {
-        return lhs[0] + lhs[1] < rhs[0] + rhs[1];
-    }
-};
-
 CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) {
     _app = app;
     int width = app->_project->width;
@@ -169,66 +163,7 @@ Vector2i CanvasRenderer::get_mouse_position() {
     }
 }
 
-Thread* CanvasRenderer::find_thread_at_position(Vector2i stitch) {
-    int palette_id = _app->_project->thread_data[stitch[0]][stitch[1]];
-    try {
-        Thread *t = _app->_project->palette.at(palette_id);
-        return t;
-    } catch (std::out_of_range&) {
-        // this shouldn't happen, but to be safe clear the stitch
-        // that contains a thread we don't know
-        erase_from_canvas(stitch);
-        return nullptr;
-    }
-}
-
-// TODO: Should app just call project.draw_stitch() directly and then
-// just call a method that uploads the texture?
-void CanvasRenderer::draw_to_canvas(Vector2i stitch, Thread *thread) {
-    _app->_project->draw_stitch(stitch, thread);
-    _texture->upload(_app->_project->texture_data_array.get());
-}
-
-// TODO: ditto above
-void CanvasRenderer::erase_from_canvas(Vector2i stitch) {
-    _app->_project->erase_stitch(stitch);
-    _texture->upload(_app->_project->texture_data_array.get());
-}
-
-void CanvasRenderer::fill_from_point(Vector2i stitch, Thread *thread) {
-    Thread *target_thread = find_thread_at_position(stitch);
-
-    std::queue<Vector2i> unvisited;
-    std::set<Vector2i, Vector2iCompare> visited;
-
-    unvisited.push(stitch);
-
-    while(unvisited.size() > 0) {
-        Vector2i current = unvisited.front();
-        Thread *current_thread = find_thread_at_position(current);
-
-        if (current_thread != target_thread) {
-            // not part of fill area, don't change this or look at its surrounding pixels
-            unvisited.pop();
-            continue;
-        }
-
-        Vector2i touching[4] = {
-            {current[0] - 1, current[1]},
-            {current[0] + 1, current[1]},
-            {current[0], current[1] + 1},
-            {current[0], current[1] - 1}
-        };
-
-        for (const Vector2i& s : touching) {
-            if (_app->_project->is_stitch_valid(s) && !visited.contains(s))
-                unvisited.push(s);
-        }
-
-        _app->_project->draw_stitch(current, thread);
-
-        unvisited.pop();
-    }
+void CanvasRenderer::upload_texture() {
     _texture->upload(_app->_project->texture_data_array.get());
 }
 

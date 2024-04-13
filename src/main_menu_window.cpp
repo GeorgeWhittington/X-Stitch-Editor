@@ -91,11 +91,17 @@ void MainMenuWindow::close_all_submenus() {
 }
 
 void MainMenuWindow::new_project() {
-    // TODO: Check if user wants to save current project
+    auto dlg = new nanogui::MessageDialog(_app, nanogui::MessageDialog::Type::Question, "", "Do you want to save your current project first?", "Yes", "No", true);
+    dlg->set_callback([this](int result) {
+        if (!result) {
+            bool saved = save();
+            if (!saved)
+                return;
+        }
 
-    XStitchEditorApplication* app = (XStitchEditorApplication*) m_parent;
-    app->switch_project(nullptr);
-    app->switch_application_state(ApplicationStates::CREATE_PROJECT);
+        _app->switch_project(nullptr);
+        _app->switch_application_state(ApplicationStates::CREATE_PROJECT);
+    });
 }
 
 void MainMenuWindow::new_project_from_image() {
@@ -103,31 +109,49 @@ void MainMenuWindow::new_project_from_image() {
 }
 
 void MainMenuWindow::open_project() {
-    // TODO: Check if user wants to save current project
+    auto dlg = new nanogui::MessageDialog(_app, nanogui::MessageDialog::Type::Question, "", "Do you want to save your current project first?", "Yes", "No", true);
+    dlg->set_callback([this](int result) {
+        if (!result) {
+            bool saved = save();
+            if (!saved)
+                return;
+        }
 
-    XStitchEditorApplication* app = (XStitchEditorApplication*) m_parent;
-    app->open_project();
+        _app->open_project();
+    });
 }
 
 void MainMenuWindow::close_project() {
-    // TODO: check with modal if user wants to save
+    auto dlg = new nanogui::MessageDialog(_app, nanogui::MessageDialog::Type::Question, "", "Do you want to save your project before closing?", "Yes", "No", true);
+    dlg->set_callback([this](int result) {
+        if (!result) {
+            bool saved = save();
+            if (!saved)
+                return;
+        }
 
-    _app->switch_project(nullptr);
-    _app->switch_application_state(ApplicationStates::LAUNCH);
+        _app->switch_project(nullptr);
+        _app->switch_application_state(ApplicationStates::LAUNCH);
+    });
 }
 
-void MainMenuWindow::save() {
+bool MainMenuWindow::save() {
     if (_app->_project->file_path == "") {
-        save_as();
+        bool saved = save_as();
+        return saved;
     } else {
         _app->_project->save(_app->_project->file_path.c_str(), _app);
+        return true;
     }
 }
 
-void MainMenuWindow::save_as() {
+bool MainMenuWindow::save_as() {
     std::string path = nanogui::file_dialog(permitted_files, true);
-    if (path != "")
+    if (path != "") {
         _app->_project->save(path.c_str(), _app);
+        return true;
+    }
+    return false;
 }
 
 void MainMenuWindow::export_to_pdf() {
