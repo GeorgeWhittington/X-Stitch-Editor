@@ -41,4 +41,5 @@ struct Project
     void draw_stitch_manual(Vector2i stitch, int index_2d, Thread *thread);
     void erase_stitch(Vector2i stitch);
     void save(const char *filepath, XStitchEditorApplication *app);
+    bool is_stitch_valid(Vector2i stitch);
 };

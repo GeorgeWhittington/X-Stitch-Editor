@@ -237,3 +237,7 @@ void Project::save(const char *filepath, XStitchEditorApplication *app) {
 
     doc.SaveFile(filepath);
 }
+
+bool Project::is_stitch_valid(Vector2i stitch) {
+    return stitch[0] >= 0 && stitch[1] >= 0 && stitch[0] < width && stitch[1] < height;
+}

@@ -88,9 +88,7 @@ void XStitchEditorApplication::switch_project(Project *project) {
 
 void XStitchEditorApplication::switch_application_state(ApplicationStates state) {
     if (_previous_state == ApplicationStates::PROJECT_OPEN) {
-        main_menu_window->_file_button->set_pushed(false);
-        main_menu_window->_edit_button->set_pushed(false);
-        main_menu_window->_view_button->set_pushed(false);
+        main_menu_window->close_all_submenus();
         main_menu_window->_menu_button->set_pushed(false);
     }
 
@@ -125,8 +123,10 @@ void XStitchEditorApplication::switch_application_state(ApplicationStates state)
 
         case ApplicationStates::PROJECT_OPEN:
             main_menu_window->set_visible(true);
-
             tool_window->set_visible(true);
+
+            main_menu_window->update_tool_toggle_icon();
+            main_menu_window->update_minimap_toggle_icon();
 
             new_project_window->set_visible(false);
             splashscreen_window->set_visible(false);
@@ -319,7 +319,7 @@ bool XStitchEditorApplication::mouse_button_event(const Vector2i &p, int button,
                 _canvas_renderer->erase_from_canvas(selected_stitch);
                 break;
             case ToolOptions::FILL:
-                // TODO
+                _canvas_renderer->fill_from_point(selected_stitch, _selected_thread);
                 break;
             default:
                 break;

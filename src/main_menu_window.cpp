@@ -20,6 +20,7 @@ void MainMenuWindow::initialise() {
     _menu_button = new nanogui::PopupButton(this, "", FA_BARS);
     _menu_button->set_chevron_icon(0);
     _menu_button->set_side(nanogui::Popup::Side::Left);
+    _menu_button->set_callback([this](){ close_all_submenus(); });
     nanogui::Popup *menu = _menu_button->popup();
     menu->set_layout(new nanogui::BoxLayout(
         nanogui::Orientation::Vertical,
@@ -58,8 +59,8 @@ void MainMenuWindow::initialise() {
         nanogui::Orientation::Vertical,
         nanogui::Alignment::Fill, 5, 5));
 
-    menu_button = new nanogui::Button(sub_menu, "Undo");
-    menu_button = new nanogui::Button(sub_menu, "Redo");
+    menu_button = new nanogui::Button(sub_menu, "Undo", FA_UNDO);
+    menu_button = new nanogui::Button(sub_menu, "Redo", FA_REDO);
 
     _view_button = new nanogui::PopupButton(menu, "View");
     _view_button->set_chevron_icon(0);
@@ -69,11 +70,10 @@ void MainMenuWindow::initialise() {
         nanogui::Orientation::Vertical,
         nanogui::Alignment::Fill, 5, 5));
 
-    // TODO: save ptr to each of these so that a check mark can be drawn when the things they control are visible
-    menu_button = new nanogui::Button(sub_menu, "Show Tools");
-    menu_button->set_callback([this](){ toggle_tools(); });
-    menu_button = new nanogui::Button(sub_menu, "Show Minimap");
-    menu_button->set_callback([this](){ toggle_minimap(); });
+    _show_tools_button = new nanogui::Button(sub_menu, "Show Tools");
+    _show_tools_button->set_callback([this](){ toggle_tools(); });
+    _show_minimap_button = new nanogui::Button(sub_menu, "Show Minimap");
+    _show_minimap_button->set_callback([this](){ toggle_minimap(); });
 
     menu_button = new nanogui::Button(menu, "Help");
 }
@@ -82,6 +82,12 @@ void MainMenuWindow::position_top_left() {
     XStitchEditorApplication *app = (XStitchEditorApplication*)m_parent;
     int screen_width = app->framebuffer_size()[0] / app->pixel_ratio();
     set_position(Vector2i(screen_width - 60, 10));
+}
+
+void MainMenuWindow::close_all_submenus() {
+    _file_button->set_pushed(false);
+    _edit_button->set_pushed(false);
+    _view_button->set_pushed(false);
 }
 
 void MainMenuWindow::new_project() {
@@ -128,8 +134,18 @@ void MainMenuWindow::export_to_pdf() {
     // TODO
 }
 
+void MainMenuWindow::update_tool_toggle_icon() {
+    int icon = _app->tool_window->visible() ? FA_CHECK : 0;
+    _show_tools_button->set_icon(icon);
+}
+
 void MainMenuWindow::toggle_tools() {
     _app->tool_window->set_visible(!_app->tool_window->visible());
+    update_tool_toggle_icon();
+}
+
+void MainMenuWindow::update_minimap_toggle_icon() {
+    // TODO
 }
 
 void MainMenuWindow::toggle_minimap() {

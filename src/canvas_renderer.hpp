@@ -1,5 +1,4 @@
 #pragma once
-#include <memory>
 #include <nanogui/nanogui.h>
 #include "threads.hpp"
 
@@ -16,6 +15,7 @@ public:
     Thread* find_thread_at_position(Vector2i stitch);
     void draw_to_canvas(Vector2i stitch, Thread *thread);
     void erase_from_canvas(Vector2i stitch);
+    void fill_from_point(Vector2i stitch, Thread *thread);
     void render();
 
     Camera2D *_camera;
