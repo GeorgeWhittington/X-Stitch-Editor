@@ -4,6 +4,7 @@
 #include "tool_window.hpp"
 #include "x_stitch_editor.hpp"
 #include "project.hpp"
+#include "canvas_renderer.hpp"
 
 #define MAKE_TOOLBUTTON_CALLBACK(tool, cursor) [&] {                        \
         XStitchEditorApplication* a = (XStitchEditorApplication*) m_parent; \

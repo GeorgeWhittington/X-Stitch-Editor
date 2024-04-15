@@ -213,6 +213,35 @@ void Project::fill_from_stitch(Vector2i stitch, Thread *thread) {
     }
 }
 
+void Project::draw_backstitch(Vector2f start_stitch, Vector2f end_stitch, Thread *thread) {
+    // Check if stitch is in range
+    if (!is_backstitch_valid(start_stitch) || !(is_backstitch_valid(end_stitch)))
+        return;
+
+    // if a backstitch already exists at this position, delete it
+    for (auto itr = backstitches.begin(); itr != backstitches.end(); itr++) {
+        BackStitch bs = *itr;
+        if (bs.start == start_stitch && bs.end == end_stitch ||
+            bs.start == end_stitch && bs.end == start_stitch) {
+            backstitches.erase(itr);
+            break;
+        }
+    }
+
+    int palette_index = -1;
+    for (int i = 0; i < palette.size(); i++) {
+        if (palette[i] == thread) {
+            palette_index = i;
+            break;
+        }
+    }
+
+    if (palette_index == -1)
+        throw std::runtime_error("Thread provided is not in this project's palette");
+
+    backstitches.push_back(BackStitch(start_stitch, end_stitch, palette_index));
+}
+
 Thread* Project::find_thread_at_stitch(Vector2i stitch) {
     int palette_id = thread_data[stitch[0]][stitch[1]];
     try {
@@ -305,4 +334,9 @@ void Project::save(const char *filepath, XStitchEditorApplication *app) {
 
 bool Project::is_stitch_valid(Vector2i stitch) {
     return stitch[0] >= 0 && stitch[1] >= 0 && stitch[0] < width && stitch[1] < height;
+}
+
+bool Project::is_backstitch_valid(Vector2f stitch) {
+    return stitch[0] >= 0.f && stitch[0] <= (float)width &&
+           stitch[1] >= 0.f && stitch[1] <= (float)height;
 }

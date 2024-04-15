@@ -51,6 +51,10 @@ public:
     (Raising an error if out of bounds)
     */
     Vector2i ndc_to_stitch(Vector2f coords, Vector4f bounds);
+    /* Converts an ndc coordinate to a canvas substitch coordinate
+    (Raising an error if out of bounds)
+    */
+    Vector2f ndc_to_substitch(Vector2f coords, Vector4f bounds);
 
 private:
     XStitchEditorApplication *_app;

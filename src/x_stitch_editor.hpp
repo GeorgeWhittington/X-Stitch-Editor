@@ -33,12 +33,11 @@ public:
 
 class XStitchEditorApplication : public nanogui::Screen {
 private:
-    CanvasRenderer *_canvas_renderer;
-
     ApplicationStates _previous_state = ApplicationStates::LAUNCH;
 
     float _last_frame = 0.0f;
     float _time_delta = 0.0f;
+    nanogui::Vector2f _previous_backstitch_point = NO_SUBSTITCH_SELECTED;
 public:
     XStitchEditorApplication();
     void load_all_threads();
@@ -60,6 +59,7 @@ public:
     MainMenuWindow *main_menu_window;
     ExitToMainMenuWindow *exit_to_main_menu_window;
 
+    CanvasRenderer *_canvas_renderer;
     Project *_project;
     ToolOptions _selected_tool = ToolOptions::MOVE;
     Thread *_selected_thread;

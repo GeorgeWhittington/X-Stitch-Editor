@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <iostream>
+#include <cmath>
 #include <nanogui/nanogui.h>
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -87,7 +88,7 @@ Matrix4f Camera2D::generate_nanogui_matrix(Vector2f translation, float scale_, f
     Matrix4f scale = Matrix4f::scale(Vector3f(scale_, scale_, 1.f));
     Matrix4f ortho = Matrix4f::ortho(
         -1 * device_ratio, 1 * device_ratio, // left, right
-        -1, 1, -100, 100                     // bottom, top, near, far
+        -1, 1, -1.f, 1.f                     // bottom, top, near, far
     );
 
     return ortho * scale * trans;
@@ -98,7 +99,7 @@ glm::mat4 Camera2D::generate_glm_matrix(Vector2f translation, float scale_, floa
     glm::mat4 scale = glm::scale(glm::mat4(1.f), glm::vec3(scale_, scale_, 1.f));
     glm::mat4 ortho = glm::ortho(
         -1 * device_ratio, 1 * device_ratio, // left, right
-        -1.f, 1.f, -100.f, 100.f             // bottom, top, near, far
+        -1.f, 1.f, -1.f, 1.f                 // bottom, top, near, far
     );
 
     return ortho * scale * trans;
@@ -188,4 +189,19 @@ Vector2i Camera2D::ndc_to_stitch(Vector2f coords, Vector4f bounds) {
     stitch_x = std::max(0, std::min(_app->_project->width - 1, stitch_x));
     stitch_y = std::max(0, std::min(_app->_project->height - 1, stitch_y));
     return Vector2i(stitch_x, stitch_y);
+}
+
+Vector2f Camera2D::ndc_to_substitch(Vector2f coords, Vector4f bounds) {
+    if (!inside_canvas(coords, bounds))
+        throw std::invalid_argument("Coordinate outside bounds of canvas");
+
+    float stitch_x = (float)_app->_project->width * ((coords[0] - bounds[0]) / (bounds[1] - bounds[0]));
+    float stitch_y = (float)_app->_project->height * ((coords[1] - bounds[3]) / (bounds[2] - bounds[3]));
+
+    stitch_x = std::max(0.f, std::min((float)(_app->_project->width - 1), stitch_x));
+    stitch_y = std::max(0.f, std::min((float)(_app->_project->height - 1), stitch_y));
+
+    stitch_x = std::round(stitch_x * 2.f) / 2.f;
+    stitch_y = std::round(stitch_y * 2.f) / 2.f;
+    return Vector2f(stitch_x, stitch_y);
 }

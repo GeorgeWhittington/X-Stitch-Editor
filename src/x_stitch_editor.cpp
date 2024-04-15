@@ -16,6 +16,7 @@
 #include "camera2d.hpp"
 #include "threads.hpp"
 #include "project.hpp"
+#include "constants.hpp"
 
 using namespace nanogui;
 
@@ -92,6 +93,7 @@ void XStitchEditorApplication::switch_project(Project *project) {
     if (project != nullptr) {
         _project = project;
         _canvas_renderer = new CanvasRenderer(this);
+        _canvas_renderer->update_backstitch_buffers();
         tool_window->set_palette();
     }
 }
@@ -308,14 +310,11 @@ bool XStitchEditorApplication::mouse_button_event(const Vector2i &p, int button,
         if (tool_window->mouse_over(p))
             return false;
 
-        Vector4f bounds = camera->canvas_bounds(_canvas_renderer->_position);
-        Vector2i selected_stitch;
+        Vector2i selected_stitch = _canvas_renderer->_selected_stitch;
+        Vector2f selected_substitch = _canvas_renderer->_selected_sub_stitch;
 
-        try {
-            selected_stitch = camera->ndc_to_stitch(mouse_ndc, bounds);
-        } catch (std::invalid_argument&) {
+        if (selected_stitch == NO_STITCH_SELECTED)
             return false;
-        }
 
         switch(_selected_tool) {
             case ToolOptions::SINGLE_STITCH:
@@ -325,7 +324,25 @@ bool XStitchEditorApplication::mouse_button_event(const Vector2i &p, int button,
                 }
                 break;
             case ToolOptions::BACK_STITCH:
-                // TODO
+                // ignore input before thread is selected
+                if (_selected_thread == nullptr)
+                    break;
+
+                // first click, store start point
+                if (_previous_backstitch_point == NO_SUBSTITCH_SELECTED) {
+                    _previous_backstitch_point = selected_substitch;
+                    break;
+                }
+
+                // two clicks to the same location, discard
+                if (_previous_backstitch_point == selected_substitch) {
+                    _previous_backstitch_point = NO_SUBSTITCH_SELECTED;
+                    break;
+                }
+
+                _project->draw_backstitch(_previous_backstitch_point, selected_substitch, _selected_thread);
+                _previous_backstitch_point = NO_SUBSTITCH_SELECTED;
+                _canvas_renderer->update_backstitch_buffers();
                 break;
             case ToolOptions::ERASE:
                 _project->erase_stitch(selected_stitch);
@@ -385,17 +402,13 @@ bool XStitchEditorApplication::mouse_motion_event(const Vector2i &p, const Vecto
         if (tool_window->mouse_over(p))
             return false;
 
-        Vector4f bounds = camera->canvas_bounds(_canvas_renderer->_position);
-        Vector2i selected_stitch;
+        Vector2i selected_stitch = _canvas_renderer->_selected_stitch;
 
-        try {
-            selected_stitch = camera->ndc_to_stitch(mouse_ndc, bounds);
-        } catch (std::invalid_argument&) {
-            // TODO: if no stitch is selected, and a drawing tool is active, it
-            // would make sense to also move the camera here aswell. Should change
-            // cursor during duration of the drag to make this obvious.
+        // TODO: if no stitch is selected, and a drawing tool is active, it
+        // would make sense to also move the camera here aswell. Should change
+        // cursor during duration of the drag to make this obvious.
+        if (selected_stitch == NO_STITCH_SELECTED)
             return false;
-        }
 
         switch(_selected_tool) {
             case ToolOptions::SINGLE_STITCH:
