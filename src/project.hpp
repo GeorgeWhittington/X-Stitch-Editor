@@ -46,14 +46,27 @@ struct Project
     std::string file_path;
 
     Project(std::string title_, int width_, int height_, nanogui::Color bg_color_);
+    // construct a project using a .OXS file.
     Project(const char *project_path, std::map<std::string, std::map<std::string, Thread*>*> *threads);
+    // Draws a single stitch to the canvas. Throws std::runtime_error if the thread provided is not in the project palette.
     void draw_stitch(Vector2i stitch, Thread *thread);
+    // Erases a single stitch from the canvas.
     void erase_stitch(Vector2i stitch);
+    /* Fills an area with the thread specified.
+    Throws std::runtime_error if the thread provided is not in the project palette. */
     void fill_from_stitch(Vector2i stitch, Thread *thread);
+    // Draws a single backstitch to the canvas. Throws std::runtime_error if the thread provided is not in the project palette.
     void draw_backstitch(Vector2f start_stitch, Vector2f end_stitch, Thread *thread);
+    // Sorts the backstitches according to their palette_index, high to low.
     void sort_backstitches();
+    // Finds and combines backstitches with the same vector that connect.
+    void collate_backstitches();
+    // Returns the thread at the stitch provided (or nullptr if there are none).
     Thread* find_thread_at_stitch(Vector2i stitch);
+    // Attempts to save the project to the file provided.
     void save(const char *filepath, XStitchEditorApplication *app);
+    // Tests if a stitch is within the range for the canvas.
     bool is_stitch_valid(Vector2i stitch);
+    // Tests if a backstitch stitch is within the range for the canvas.
     bool is_backstitch_valid(Vector2f stitch);
 };

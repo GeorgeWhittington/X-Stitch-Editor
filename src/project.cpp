@@ -35,6 +35,15 @@ int retrieve_int_attribute(tinyxml2::XMLElement *element, const char *key) {
     return int_attr;
 }
 
+float retrieve_float_attribute(tinyxml2::XMLElement *element, const char *key) {
+    float float_attr;
+    tinyxml2::XMLError err = element->QueryFloatAttribute(key, &float_attr);
+    if (err != tinyxml2::XML_SUCCESS)
+        throw std::runtime_error("Error parsing file");
+
+    return float_attr;
+}
+
 nanogui::Color hex2rgb(std::string input) {
     if (input[0] == '#')
         input.erase(0, 1);
@@ -144,7 +153,55 @@ Project::Project(const char *project_path, std::map<std::string, std::map<std::s
         }
     }
 
+    // TODO: Read part-stitch data
+
     // TODO: Read backstitch data
+
+    XMLElement *backstitch = chart->FirstChildElement("backstitches");
+    backstitch = backstitch->FirstChildElement("backstitch");
+
+    if (backstitch != nullptr) {
+        while (true) {
+            float x1 = retrieve_float_attribute(backstitch, "x1");
+            float y1 = retrieve_float_attribute(backstitch, "y1");
+            float x2 = retrieve_float_attribute(backstitch, "x2");
+            float y2 = retrieve_float_attribute(backstitch, "y2");
+            int index = retrieve_int_attribute(backstitch, "palindex");
+            // Objecttype attribute which can mean that some stitches are not backstitches
+            // but instead something complex like a daisy. Will ignore this and just render them
+            // as backstitches.
+
+            // There's a sequence attr also, but I don't render backstitches in such a way
+            // that the direction they are drawn in matters, so I'm ignoring it.
+
+            float width_f = (float)width;
+            float height_f = (float)height;
+
+            // clamp to 0..width/height
+            x1 = std::max(0.f, std::min(width_f, x1));
+            x2 = std::max(0.f, std::min(width_f, x2));
+            y1 = std::max(0.f, std::min(height_f, (height_f - y1 + 1)));
+            y2 = std::max(0.f, std::min(height_f, (height_f - y2 + 1)));
+
+            // round to whole or 0.5 increments
+            x1 = std::round(x1 * 2.f) / 2.f;
+            x2 = std::round(x2 * 2.f) / 2.f;
+            y1 = std::round(y1 * 2.f) / 2.f;
+            y2 = std::round(y2 * 2.f) / 2.f;
+
+            Thread *thread = palette[index - 1];
+
+            // TODO: testing, remove
+            if (index != 1)
+                draw_backstitch(Vector2f(x1, y1), Vector2f(x2, y2), thread);
+
+            backstitch = backstitch->NextSiblingElement("backstitch");
+            if (backstitch == nullptr)
+                break;
+        }
+    }
+    collate_backstitches();
+    sort_backstitches();
 };
 
 void Project::draw_stitch(Vector2i stitch, Thread *thread) {
@@ -248,6 +305,88 @@ void Project::draw_backstitch(Vector2f start_stitch, Vector2f end_stitch, Thread
 
 void Project::sort_backstitches() {
     std::sort(backstitches.begin(), backstitches.end(), compareBackstitch);
+}
+
+void Project::collate_backstitches() {
+    std::vector<BackStitch> new_backstitches;
+
+    // Split backstitches up by colour
+    std::map<float, std::vector<BackStitch>> backstitches_split[palette.size()];
+    for (BackStitch bs : backstitches) {
+        float gradient;
+        if (bs.end[0] - bs.start[0] != 0) {
+            gradient = (bs.end[1] - bs.start[1]) / (bs.end[0] - bs.start[0]);
+        } else {
+            gradient = INT_MAX;
+        }
+
+        backstitches_split[bs.palette_index][gradient].push_back(bs);
+    }
+
+    for (std::map<float, std::vector<BackStitch>> bs_map : backstitches_split) {
+        for (auto const& [key, vec] : bs_map) {
+            // Only a single backstitch with the same colour+gradient
+            if (vec.size() == 1) {
+                new_backstitches.push_back(vec.at(0));
+                continue;
+            }
+
+            std::vector<BackStitch> editable_vec = vec;
+
+            while (true) {
+                std::vector<BackStitch> combined;
+                std::set<int> removed;
+
+                for (int i = 0; i < editable_vec.size(); i++) {
+                    if (removed.find(i) != removed.end())
+                        continue;
+
+                    for (int j = 0; j < editable_vec.size(); j++) {
+                        if (i == j || removed.find(j) != removed.end())
+                            continue;
+
+                        BackStitch bs1 = editable_vec.at(i);
+                        BackStitch bs2 = editable_vec.at(j);
+
+                        if (bs1.start == bs2.start) {
+                            combined.push_back(BackStitch(bs1.end, bs2.end, bs1.palette_index));
+                        } else if (bs1.start == bs2.end) {
+                            combined.push_back(BackStitch(bs1.end, bs2.start, bs1.palette_index));
+                        } else if (bs1.end == bs2.start) {
+                            combined.push_back(BackStitch(bs1.start, bs2.end, bs1.palette_index));
+                        } else if (bs1.end == bs2.end) {
+                            combined.push_back(BackStitch(bs1.start, bs2.start, bs1.palette_index));
+                        } else {
+                            continue;
+                        }
+
+                        removed.insert(i);
+                        removed.insert(j);
+                    }
+                }
+
+                // Delete items that have been combined (in high to low index, to preserve the order)
+                std::set<int>::reverse_iterator rit;
+                for (auto rit = removed.rbegin(); rit != removed.rend(); rit++) {
+                    editable_vec.erase(editable_vec.begin() + *rit);
+                }
+
+                // No combinations made, copy modified backstitches and exit while loop
+                if (combined.size() == 0) {
+                    for (BackStitch bs : editable_vec) {
+                        new_backstitches.push_back(bs);
+                    }
+                    break;
+                }
+
+                for (BackStitch bs : combined) {
+                    editable_vec.push_back(bs);
+                }
+            }
+        }
+    }
+
+    backstitches = new_backstitches;
 }
 
 Thread* Project::find_thread_at_stitch(Vector2i stitch) {

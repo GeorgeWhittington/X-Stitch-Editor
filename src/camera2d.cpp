@@ -198,9 +198,11 @@ Vector2f Camera2D::ndc_to_substitch(Vector2f coords, Vector4f bounds) {
     float stitch_x = (float)_app->_project->width * ((coords[0] - bounds[0]) / (bounds[1] - bounds[0]));
     float stitch_y = (float)_app->_project->height * ((coords[1] - bounds[3]) / (bounds[2] - bounds[3]));
 
+    // clamp to 0..width/height
     stitch_x = std::max(0.f, std::min((float)(_app->_project->width), stitch_x));
     stitch_y = std::max(0.f, std::min((float)(_app->_project->height), stitch_y));
 
+    // round to whole or 0.5 increments
     stitch_x = std::round(stitch_x * 2.f) / 2.f;
     stitch_y = std::round(stitch_y * 2.f) / 2.f;
     return Vector2f(stitch_x, stitch_y);

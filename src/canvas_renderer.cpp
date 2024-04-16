@@ -151,8 +151,6 @@ CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) {
         delete _major_grid_shader;
         _major_grid_shader = nullptr;
     }
-
-    // _back_stitch_cap_shader->set_uniform("radius", major_grid_mark_normal);
 };
 
 void create_circle_vertices(float cx, float cy, float r, int num_segments, std::vector<float> *buffer) {
@@ -189,6 +187,10 @@ void create_circle_vertices(float cx, float cy, float r, int num_segments, std::
 }
 
 void CanvasRenderer::update_backstitch_buffers() {
+    // TODO: should entirely change approach and draw line + circle in the same
+    // shader. What I have right now isn't possible to draw in a way where the
+    // lines and caps don't interact weirdly. (ie cap from line 1 appearing on
+    // top of line 2 when line 2 is drawn ontop of line 1)
     std::vector<BackStitch> *backstitches = &_app->_project->backstitches;
     int no_backstitches = backstitches->size();
 
