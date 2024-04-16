@@ -37,7 +37,6 @@ private:
 
     float _last_frame = 0.0f;
     float _time_delta = 0.0f;
-    nanogui::Vector2f _previous_backstitch_point = NO_SUBSTITCH_SELECTED;
 public:
     XStitchEditorApplication();
     void load_all_threads();
@@ -64,4 +63,5 @@ public:
     ToolOptions _selected_tool = ToolOptions::MOVE;
     Thread *_selected_thread;
     std::map<std::string, std::map<std::string, Thread*>*> _threads;
+    nanogui::Vector2f _previous_backstitch_point = NO_SUBSTITCH_SELECTED;
 };

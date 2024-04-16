@@ -51,6 +51,7 @@ struct Project
     void erase_stitch(Vector2i stitch);
     void fill_from_stitch(Vector2i stitch, Thread *thread);
     void draw_backstitch(Vector2f start_stitch, Vector2f end_stitch, Thread *thread);
+    void sort_backstitches();
     Thread* find_thread_at_stitch(Vector2i stitch);
     void save(const char *filepath, XStitchEditorApplication *app);
     bool is_stitch_valid(Vector2i stitch);

@@ -5,11 +5,13 @@
 #include "x_stitch_editor.hpp"
 #include "project.hpp"
 #include "canvas_renderer.hpp"
+#include "constants.hpp"
 
 #define MAKE_TOOLBUTTON_CALLBACK(tool, cursor) [&] {                        \
         XStitchEditorApplication* a = (XStitchEditorApplication*) m_parent; \
         a->_selected_tool = tool;                                           \
-        m_parent->set_cursor(cursor);                                       \
+        a->set_cursor(cursor);                                              \
+        a->_previous_backstitch_point = NO_SUBSTITCH_SELECTED;              \
     }                                                                       \
 
 using namespace nanogui;
@@ -27,6 +29,12 @@ void EditPaletteButton::palettebutton_callback() {
     _app->_project->palette.push_back(_thread);
     _app->tool_window->set_palette();
     _app->tool_window->_add_to_palette_button->set_pushed(false);
+
+    if (_app->_selected_thread == nullptr) {
+        _app->_selected_thread = _thread;
+        _app->tool_window->update_selected_thread_widget();
+    }
+
     _app->perform_layout();
 };
 

@@ -247,25 +247,20 @@ void CanvasRenderer::update_backstitch_buffers() {
         _back_stitch_shader->set_buffer("colour", VariableType::Float32, {(size_t)no_backstitches * 4 * 4}, backstitch_colours);
     }
 
-    // TODO: at the moment we just choose the first end that we can find
-    // and when two lines of different colours meet this can cause issues
-    // if the cap that is chosen is not the colour of the line drawn
-    // over-top
-
-    // An easy resolution would be to simply order all backstitches by colour
-    // (lower indexes being drawn last) and then preferentially pick ends with
-    // lower indexes. Not perfect, but I don't really care.
-
-    // Find all unique backstitch end points
+    // Find all unique backstitch end points. Override colour
+    // if a lower palette index can be found for a point, because
+    // line segments are drawn with lower palette indexes last
     std::vector<std::pair<Vector2f, int>> backstitch_caps;
     for (const BackStitch bs : *backstitches) {
         Vector2f points[2] = {bs.start, bs.end};
 
         for (const Vector2f point : points) {
             bool already_contained = false;
-            for (const std::pair<Vector2f, int> cap : backstitch_caps) {
-                if (cap.first == point) {
+            for (auto itr = backstitch_caps.begin(); itr < backstitch_caps.end(); itr++) {
+                if ((*itr).first == point) {
                     already_contained = true;
+                    if ((*itr).second > bs.palette_index)
+                        (*itr).second = bs.palette_index;
                     break;
                 }
             }

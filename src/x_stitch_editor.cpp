@@ -198,6 +198,8 @@ void XStitchEditorApplication::draw_contents() {
 
     _canvas_renderer->render();
 
+    // TODO: make this window (or another if it's too busy)
+    // contain the currently selected backstitch start location (if there is one)
     if (_canvas_renderer->_selected_stitch != NO_STITCH_SELECTED) {
         mouse_position_window->set_captions(
             _canvas_renderer->_selected_stitch[0] + 1,
@@ -341,12 +343,17 @@ bool XStitchEditorApplication::mouse_button_event(const Vector2i &p, int button,
                 }
 
                 _project->draw_backstitch(_previous_backstitch_point, selected_substitch, _selected_thread);
+                _project->sort_backstitches();
                 _previous_backstitch_point = NO_SUBSTITCH_SELECTED;
                 _canvas_renderer->update_backstitch_buffers();
                 break;
             case ToolOptions::ERASE:
                 _project->erase_stitch(selected_stitch);
                 _canvas_renderer->upload_texture();
+
+                // TODO: find out if any backstitches intersect the selected stitch
+                // or if the selected substitch is the start/end of a backstitch
+                // erase if so!
                 break;
             case ToolOptions::FILL:
                 _project->fill_from_stitch(selected_stitch, _selected_thread);
