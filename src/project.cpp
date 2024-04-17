@@ -7,6 +7,9 @@
 #include <vector>
 #include <set>
 
+using nanogui::Vector2i;
+using nanogui::Vector2f;
+
 struct Vector2iCompare {
     bool operator() (const Vector2i& lhs, const Vector2i& rhs) const {
         return lhs[0] + lhs[1] < rhs[0] + rhs[1];

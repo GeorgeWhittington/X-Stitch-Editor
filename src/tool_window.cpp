@@ -19,6 +19,7 @@ using namespace nanogui;
 void PaletteButton::palettebutton_callback() {
     _app->_selected_thread = _thread;
     _app->tool_window->update_selected_thread_widget();
+    _app->_canvas_renderer->move_ghost_backstitch(_app->_canvas_renderer->_selected_sub_stitch, _thread);
 };
 
 void EditPaletteButton::palettebutton_callback() {

@@ -4,16 +4,14 @@
 #include "constants.hpp"
 #include "threads.hpp"
 
-using nanogui::Vector2i;
-
 class DisabledButton : public nanogui::Button {
 public:
     DisabledButton(nanogui::Widget *parent, const std::string &caption = "Untitled", int icon = 0) : nanogui::Button(parent, caption, icon) {};
 
-    virtual bool mouse_enter_event(const Vector2i &p, bool enter) {
+    virtual bool mouse_enter_event(const nanogui::Vector2i &p, bool enter) {
         return false;
     };
-    virtual bool mouse_button_event(const Vector2i &p, int button, bool down, int modifiers) {
+    virtual bool mouse_button_event(const nanogui::Vector2i &p, int button, bool down, int modifiers) {
         return false;
     };
 };
@@ -48,7 +46,7 @@ class ToolWindow : public nanogui::Window {
 public:
     ToolWindow(nanogui::Widget *parent) : nanogui::Window(parent, "Tools") {};
     void initialise();
-    bool mouse_over(Vector2i position);
+    bool mouse_over(nanogui::Vector2i position);
     void set_palette();
     void update_selected_thread_widget();
 

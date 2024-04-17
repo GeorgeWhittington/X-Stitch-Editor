@@ -33,6 +33,7 @@ CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) {
     _minor_grid_shader = new Shader(_render_pass, "minor_grid", MINOR_GRID_VERT, MINOR_GRID_FRAG);
     _major_grid_shader = new Shader(_render_pass, "major_grid", MAJOR_GRID_VERT, MAJOR_GRID_FRAG);
     _back_stitch_shader = new Shader(_render_pass, "back_stitch", BACK_STITCH_VERT, BACK_STITCH_FRAG);
+    _back_stitch_ghost_shader = new Shader(_render_pass, "back_stitch_ghost", BACK_STITCH_VERT, BACK_STITCH_FRAG);
 
     if (width > height) {
         _v = (float)height / (float)width;
@@ -71,11 +72,11 @@ CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) {
     int width_minus_1 = width - 1;
     int height_minus_1 = height - 1;
 
-    _minor_grid_total_verts = (height_minus_1 * 4) + (width_minus_1 * 4);
+    int minor_grid_total_verts = (height_minus_1 * 4) + (width_minus_1 * 4);
     int major_grid_total_horizontal_verts = (height_minus_1 / 10) * 8;
     int major_grid_total_vertical_verts = (width_minus_1 / 10) * 8;
     int major_grid_total_verts = major_grid_total_horizontal_verts + major_grid_total_vertical_verts;
-    float minor_gridmarks[_minor_grid_total_verts];
+    float minor_gridmarks[minor_grid_total_verts];
     float major_gridmarks[major_grid_total_verts];
 
     float x = -_h;
@@ -96,6 +97,11 @@ CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) {
         minor_gridmarks[(4*i) + 2] = -_h;
         minor_gridmarks[(4*i) + 3] =  y;
     }
+
+    _minor_grid_indices_size = minor_grid_total_verts / 2;
+    uint32_t minor_grid_indices[_minor_grid_indices_size];
+    for (int i = 0; i < _minor_grid_indices_size; i++)
+        minor_grid_indices[i] = i;
 
     x = -_h;
     for (int i = 0; i < (width_minus_1 / 10); i++) {
@@ -155,7 +161,8 @@ CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) {
     float minor_color[4] = {0.5f, 0.5f, 0.5f, 1.f};
     float major_color[4] = {0.f, 0.f, 0.f, 1.f};
 
-    _minor_grid_shader->set_buffer("position", VariableType::Float32, {(size_t)(_minor_grid_total_verts) / 2, 2}, minor_gridmarks);
+    _minor_grid_shader->set_buffer("position", VariableType::Float32, {(size_t)(minor_grid_total_verts) / 2, 2}, minor_gridmarks);
+    _minor_grid_shader->set_buffer("indices", VariableType::UInt32, {(size_t)_minor_grid_indices_size}, minor_grid_indices);
     _minor_grid_shader->set_buffer("colour", VariableType::Float32, {4}, minor_color);
 
     if (major_grid_total_verts > 0) {
@@ -168,50 +175,6 @@ CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) {
         _major_grid_shader = nullptr;
     }
 };
-
-void create_circle_vertices(Vector2f center, float r, int num_segments, std::vector<float> *buffer) {
-    float theta = 3.1415926 * 2 / float(num_segments);
-    float tangetial_factor = tanf(theta);
-    float radial_factor = cosf(theta);
-
-    float x = r;
-    float y = 0;
-
-    // center vertex
-    buffer->push_back(center[0]);
-    buffer->push_back(center[1]);
-
-    for (int i = 0; i < num_segments; i++)
-    {
-        buffer->push_back(x + center[0]);
-        buffer->push_back(y + center[1]);
-
-        // calculate the tangential vector
-        // remember, the radial vector is (x, y)
-        // to get the tangential vector we flip those coordinates and negate one of them
-        float tx = -y;
-        float ty = x;
-
-        // add the tangential vector
-        x += tx * tangetial_factor;
-        y += ty * tangetial_factor;
-
-        // correct using the radial factor
-        x *= radial_factor;
-        y *= radial_factor;
-    }
-}
-
-void create_line_vertices(Vector2f start, Vector2f end, Vector2f normal_vector, std::vector<float> *buffer) {
-    buffer->push_back(start[0] + normal_vector[0]);
-    buffer->push_back(start[1] + normal_vector[1]);
-    buffer->push_back(start[0] - normal_vector[0]);
-    buffer->push_back(start[1] - normal_vector[1]);
-    buffer->push_back(end[0] + normal_vector[0]);
-    buffer->push_back(end[1] + normal_vector[1]);
-    buffer->push_back(end[0] - normal_vector[0]);
-    buffer->push_back(end[1] - normal_vector[1]);
-}
 
 const u_int32_t circle_vert_layout[50 * 3] = {
     0, 1, 2,    0, 2, 3,    0, 3, 4,    0, 4, 5,
@@ -229,6 +192,65 @@ const u_int32_t circle_vert_layout[50 * 3] = {
     0, 49, 50,  0, 50, 1
 };
 
+void create_circle_vertices(Vector2f center, float r, int num_segments, std::vector<float> *pos_buffer, std::vector<uid_t> *ind_buffer) {
+    uint32_t circle_start = pos_buffer->size() == 0 ? 0 : pos_buffer->size() / 2;
+
+    float theta = 3.1415926 * 2 / float(num_segments);
+    float tangetial_factor = tanf(theta);
+    float radial_factor = cosf(theta);
+
+    float x = r;
+    float y = 0;
+
+    // center vertex
+    pos_buffer->push_back(center[0]);
+    pos_buffer->push_back(center[1]);
+
+    for (int i = 0; i < num_segments; i++) {
+        pos_buffer->push_back(x + center[0]);
+        pos_buffer->push_back(y + center[1]);
+
+        // calculate the tangential vector
+        // remember, the radial vector is (x, y)
+        // to get the tangential vector we flip those coordinates and negate one of them
+        float tx = -y;
+        float ty = x;
+
+        // add the tangential vector
+        x += tx * tangetial_factor;
+        y += ty * tangetial_factor;
+
+        // correct using the radial factor
+        x *= radial_factor;
+        y *= radial_factor;
+    }
+
+    for (u_int32_t indices : circle_vert_layout)
+        ind_buffer->push_back(indices + circle_start);
+}
+
+void create_line_vertices(Vector2f start, Vector2f end, Vector2f normal_vector, std::vector<float> *pos_buffer, std::vector<uint32_t> *ind_buffer) {
+    uint32_t line_start = pos_buffer->size() == 0 ? 0 : pos_buffer->size() / 2;
+
+    pos_buffer->push_back(start[0] + normal_vector[0]);
+    pos_buffer->push_back(start[1] + normal_vector[1]);
+    pos_buffer->push_back(start[0] - normal_vector[0]);
+    pos_buffer->push_back(start[1] - normal_vector[1]);
+    pos_buffer->push_back(end[0] + normal_vector[0]);
+    pos_buffer->push_back(end[1] + normal_vector[1]);
+    pos_buffer->push_back(end[0] - normal_vector[0]);
+    pos_buffer->push_back(end[1] - normal_vector[1]);
+
+    ind_buffer->push_back(line_start + 2);
+    ind_buffer->push_back(line_start + 1);
+    ind_buffer->push_back(line_start + 0);
+    ind_buffer->push_back(line_start + 3);
+    ind_buffer->push_back(line_start + 1);
+    ind_buffer->push_back(line_start + 2);
+}
+
+
+
 void CanvasRenderer::update_backstitch_buffers() {
     std::vector<BackStitch> *backstitches = &_app->_project->backstitches;
     int no_backstitches = backstitches->size();
@@ -243,33 +265,13 @@ void CanvasRenderer::update_backstitch_buffers() {
     for (BackStitch bs : *backstitches) {
         Vector2f start_ndc = (bs.start * _minor_grid_mark_distance) - Vector2f(_h, _v);
         Vector2f end_ndc = (bs.end * _minor_grid_mark_distance) - Vector2f(_h, _v);
-
-        // circle at start
-        uint32_t circle_start = backstitch_positions.size() == 0 ? 0 : backstitch_positions.size() / 2;
-        create_circle_vertices(start_ndc, normal, no_circle_verts, &backstitch_positions);
-        for (u_int32_t indices : circle_vert_layout)
-            backstitch_indices.push_back(indices + circle_start);
-
-        // line
         Vector2f line_vector = bs.end - bs.start;
         Vector2f perpendicular_vector = normalize(Vector2f(line_vector[1], -line_vector[0]));
         Vector2f normal_vector = normal * perpendicular_vector;
 
-        uint32_t line_start = backstitch_positions.size() == 0 ? 0 : backstitch_positions.size() / 2;
-        create_line_vertices(start_ndc, end_ndc, normal_vector, &backstitch_positions);
-
-        backstitch_indices.push_back(line_start + 2);
-        backstitch_indices.push_back(line_start + 1);
-        backstitch_indices.push_back(line_start + 0);
-        backstitch_indices.push_back(line_start + 3);
-        backstitch_indices.push_back(line_start + 1);
-        backstitch_indices.push_back(line_start + 2);
-
-        // circle at end
-        circle_start = backstitch_positions.size() == 0 ? 0 : backstitch_positions.size() / 2;
-        create_circle_vertices(end_ndc, normal, no_circle_verts, &backstitch_positions);
-        for (u_int32_t indices : circle_vert_layout)
-            backstitch_indices.push_back(indices + circle_start);
+        create_circle_vertices(start_ndc, normal, no_circle_verts, &backstitch_positions, &backstitch_indices);
+        create_line_vertices(start_ndc, end_ndc, normal_vector, &backstitch_positions, &backstitch_indices);
+        create_circle_vertices(end_ndc, normal, no_circle_verts, &backstitch_positions, &backstitch_indices);
 
         // colour for all vertices
         Thread *t = _app->_project->palette[bs.palette_index];
@@ -289,6 +291,51 @@ void CanvasRenderer::update_backstitch_buffers() {
         _back_stitch_shader->set_buffer("indices", VariableType::UInt32, {(size_t)_backstitch_indices_size}, backstitch_indices.data());
         _back_stitch_shader->set_buffer("colour", VariableType::Float32, {backstitch_colours.size()}, backstitch_colours.data());
     }
+}
+
+void CanvasRenderer::clear_ghost_backstitch() {
+    _backstitch_ghost_indices_size = 0;
+}
+
+void CanvasRenderer::move_ghost_backstitch(Vector2f end, Thread *thread) {
+    Vector2f start = _app->_previous_backstitch_point;
+    if (end == NO_SUBSTITCH_SELECTED || start == NO_SUBSTITCH_SELECTED) {
+        _backstitch_ghost_indices_size = 0;
+        return;
+    }
+
+    int no_circle_verts = 50;
+    int total_verts_per_segment = no_circle_verts + no_circle_verts + 2 + 4; // two circles and a line
+    float normal = _minor_grid_mark_distance * 0.125f;
+
+    std::vector<float> backstitch_positions;
+    std::vector<float> backstitch_colours;
+    std::vector<u_int32_t> backstitch_indices;
+
+    Vector2f start_ndc = (start * _minor_grid_mark_distance) - Vector2f(_h, _v);
+    Vector2f end_ndc = (end * _minor_grid_mark_distance) - Vector2f(_h, _v);
+    Vector2f line_vector = end - start;
+    Vector2f perpendicular_vector = normalize(Vector2f(line_vector[1], -line_vector[0]));
+    Vector2f normal_vector = normal * perpendicular_vector;
+
+    create_circle_vertices(start_ndc, normal, no_circle_verts, &backstitch_positions, &backstitch_indices);
+    create_line_vertices(start_ndc, end_ndc, normal_vector, &backstitch_positions, &backstitch_indices);
+    create_circle_vertices(end_ndc, normal, no_circle_verts, &backstitch_positions, &backstitch_indices);
+
+    // colour for all vertices
+    Color c = thread->color();
+    for (int i = 0; i < total_verts_per_segment; i++) {
+        backstitch_colours.push_back(c.r());
+        backstitch_colours.push_back(c.g());
+        backstitch_colours.push_back(c.b());
+        backstitch_colours.push_back(c.a());
+    }
+
+    _backstitch_ghost_indices_size = backstitch_indices.size();
+
+    _back_stitch_ghost_shader->set_buffer("position", VariableType::Float32, {backstitch_positions.size() / 2, 2}, backstitch_positions.data());
+    _back_stitch_ghost_shader->set_buffer("indices", VariableType::UInt32, {(size_t)_backstitch_ghost_indices_size}, backstitch_indices.data());
+    _back_stitch_ghost_shader->set_buffer("colour", VariableType::Float32, {backstitch_colours.size()}, backstitch_colours.data());
 }
 
 Vector2i CanvasRenderer::get_mouse_position() {
@@ -322,6 +369,9 @@ void CanvasRenderer::render() {
     _selected_stitch = get_mouse_position();
     _selected_sub_stitch = get_mouse_subposition();
 
+    if (_backstitch_ghost_indices_size != 0 && _selected_sub_stitch == NO_SUBSTITCH_SELECTED || _app->_selected_tool != ToolOptions::BACK_STITCH)
+        clear_ghost_backstitch();
+
     float pixel_canvas_height = _canvas_height_ndc * _camera->get_scale() * (float)(device_size[1]) / _app->pixel_ratio();
     float minor_grid_mark_pixel_distance = pixel_canvas_height * _minor_grid_mark_distance;
 
@@ -335,6 +385,7 @@ void CanvasRenderer::render() {
         render_major_grid_shader(mvp);
     }
     render_back_stitch_shader(mvp);
+    render_back_stitch_ghost_shader(mvp);
 
     _render_pass->end();
 };
@@ -358,7 +409,7 @@ void CanvasRenderer::render_minor_grid_shader(Matrix4f mvp) {
 
     _minor_grid_shader->begin();
     _minor_grid_shader->draw_array(Shader::PrimitiveType::Line, 0,
-                                   _minor_grid_total_verts, false);
+                                   _minor_grid_indices_size, true);
     _minor_grid_shader->end();
 }
 
@@ -390,4 +441,16 @@ void CanvasRenderer::render_back_stitch_shader(Matrix4f mvp) {
     _back_stitch_shader->draw_array(Shader::PrimitiveType::Triangle, 0,
                                     _backstitch_indices_size, true);
     _back_stitch_shader->end();
+}
+
+void CanvasRenderer::render_back_stitch_ghost_shader(Matrix4f mvp) {
+    if (_back_stitch_ghost_shader == nullptr || _backstitch_ghost_indices_size == 0)
+        return;
+
+    _back_stitch_ghost_shader->set_uniform("mvp", mvp);
+
+    _back_stitch_ghost_shader->begin();
+    _back_stitch_ghost_shader->draw_array(Shader::PrimitiveType::Triangle, 0,
+                                          _backstitch_ghost_indices_size, true);
+    _back_stitch_ghost_shader->end();
 }

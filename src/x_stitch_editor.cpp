@@ -288,16 +288,22 @@ bool XStitchEditorApplication::mouse_button_event(const Vector2i &p, int button,
     if (_canvas_renderer == nullptr)
         return false;
 
-    if (button == GLFW_MOUSE_BUTTON_1 && down) {
-        Camera2D *camera = _canvas_renderer->_camera;
-        Vector2f mouse_ndc;
+    if (button != GLFW_MOUSE_BUTTON_1 && button != GLFW_MOUSE_BUTTON_2)
+        return false;
 
-        try {
-            mouse_ndc = camera->screen_to_ndc(p);
-        } catch (std::invalid_argument&) {
+    Camera2D *camera = _canvas_renderer->_camera;
+    Vector2f mouse_ndc;
+
+    try {
+        mouse_ndc = camera->screen_to_ndc(p);
+    } catch (std::invalid_argument&) {
+        return false;
+    }
+
+    if (tool_window->mouse_over(p))
             return false;
-        }
 
+    if (button == GLFW_MOUSE_BUTTON_1 && down) {
         if (_selected_tool == ToolOptions::ZOOM_IN) {
             camera->zoom_to_point(mouse_ndc, 1.1f, _canvas_renderer->_position);
             return false;
@@ -306,9 +312,6 @@ bool XStitchEditorApplication::mouse_button_event(const Vector2i &p, int button,
             camera->zoom_to_point(mouse_ndc, 0.9f, _canvas_renderer->_position);
             return false;
         }
-
-        if (tool_window->mouse_over(p))
-            return false;
 
         Vector2i selected_stitch = _canvas_renderer->_selected_stitch;
         Vector2f selected_substitch = _canvas_renderer->_selected_sub_stitch;
@@ -331,17 +334,20 @@ bool XStitchEditorApplication::mouse_button_event(const Vector2i &p, int button,
                 // first click, store start point
                 if (_previous_backstitch_point == NO_SUBSTITCH_SELECTED) {
                     _previous_backstitch_point = selected_substitch;
+                    _canvas_renderer->move_ghost_backstitch(selected_substitch, _selected_thread);
                     break;
                 }
 
                 // two clicks to the same location, discard
                 if (_previous_backstitch_point == selected_substitch) {
                     _previous_backstitch_point = NO_SUBSTITCH_SELECTED;
+                    _canvas_renderer->clear_ghost_backstitch();
                     break;
                 }
 
                 _project->draw_backstitch(_previous_backstitch_point, selected_substitch, _selected_thread);
                 _previous_backstitch_point = NO_SUBSTITCH_SELECTED;
+                _canvas_renderer->clear_ghost_backstitch();
                 _canvas_renderer->update_backstitch_buffers();
                 break;
             case ToolOptions::ERASE:
@@ -358,6 +364,12 @@ bool XStitchEditorApplication::mouse_button_event(const Vector2i &p, int button,
                 break;
             default:
                 break;
+        }
+    } else if (button == GLFW_MOUSE_BUTTON_2 && down) {
+        if (_selected_tool == ToolOptions::BACK_STITCH && _previous_backstitch_point != NO_SUBSTITCH_SELECTED) {
+            // Clear selection
+            _previous_backstitch_point = NO_SUBSTITCH_SELECTED;
+            _canvas_renderer->clear_ghost_backstitch();
         }
     }
 
@@ -380,6 +392,16 @@ bool XStitchEditorApplication::mouse_motion_event(const Vector2i &p, const Vecto
 #endif
 
     Camera2D *camera = _canvas_renderer->_camera;
+
+    // Halfway through drawing a backstitch
+    if (_selected_tool == ToolOptions::BACK_STITCH && _previous_backstitch_point != NO_SUBSTITCH_SELECTED) {
+        Vector2f selected_sub_stitch = _canvas_renderer->_selected_sub_stitch;
+        if (selected_sub_stitch == NO_SUBSTITCH_SELECTED) {
+            _canvas_renderer->clear_ghost_backstitch();
+        } else {
+            _canvas_renderer->move_ghost_backstitch(selected_sub_stitch, _selected_thread);
+        }
+    }
 
     if (button == button_1) {
         Vector2f mouse_ndc;

@@ -4,9 +4,6 @@
 #include "threads.hpp"
 #include "constants.hpp"
 
-using nanogui::Vector2i;
-using nanogui::Vector2f;
-
 class XStitchEditorApplication;
 class Camera2D;
 
@@ -14,39 +11,44 @@ class CanvasRenderer {
 public:
     CanvasRenderer(XStitchEditorApplication *app);
     void update_backstitch_buffers();
+    void clear_ghost_backstitch();
+    void move_ghost_backstitch(nanogui::Vector2f end, Thread *thread);
     void upload_texture();
     void render();
 
+    // TODO: smart ptr this! maybe use shared_ptr since other stuff uses it?
+    // Though I suppose that's only via this cls, so maybe unique ptr could be fine
     Camera2D *_camera;
     float _position[3*4];
-    Vector2i _selected_stitch = NO_STITCH_SELECTED;
-    Vector2f _selected_sub_stitch = NO_SUBSTITCH_SELECTED;
+    nanogui::Vector2i _selected_stitch = NO_STITCH_SELECTED;
+    nanogui::Vector2f _selected_sub_stitch = NO_SUBSTITCH_SELECTED;
 
 private:
-    Vector2i get_mouse_position();
-    Vector2f get_mouse_subposition();
+    nanogui::Vector2i get_mouse_position();
+    nanogui::Vector2f get_mouse_subposition();
     void render_cs_shader(nanogui::Matrix4f mvp);
     void render_minor_grid_shader(nanogui::Matrix4f mvp);
     void render_major_grid_shader(nanogui::Matrix4f mvp);
     void render_back_stitch_shader(nanogui::Matrix4f mvp);
-    void render_back_stitch_cap_shader(nanogui::Matrix4f mvp);
+    void render_back_stitch_ghost_shader(nanogui::Matrix4f mvp);
 
     XStitchEditorApplication *_app;
 
+    // TODO: consider smart pointers for all of these *or* delete them in the destructor. unique_ptr
     nanogui::RenderPass *_render_pass;
     nanogui::Shader *_cross_stitch_shader;
     nanogui::Shader *_minor_grid_shader;
     nanogui::Shader *_major_grid_shader;
     nanogui::Shader *_back_stitch_shader;
-    nanogui::Shader *_back_stitch_cap_shader;
+    nanogui::Shader *_back_stitch_ghost_shader;
     nanogui::Texture *_texture;
 
     float _canvas_height_ndc;
     float _minor_grid_mark_distance;
-    int _minor_grid_total_verts;
     int _major_grid_indices_size;
+    int _minor_grid_indices_size;
     int _backstitch_indices_size = 0;
-    int _backstitch_cap_indices_size = 0;
+    int _backstitch_ghost_indices_size = 0;
     float _h = 1.f;
     float _v = 1.f;
 };
