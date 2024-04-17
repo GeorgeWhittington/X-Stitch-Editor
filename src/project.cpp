@@ -133,69 +133,73 @@ Project::Project(const char *project_path, std::map<std::string, std::map<std::s
     }
 
     XMLElement *stitch = chart->FirstChildElement("fullstitches");
-    stitch = stitch->FirstChildElement("stitch");
-
     if (stitch != nullptr) {
-        while (true) {
-            // get data out
-            int x = retrieve_int_attribute(stitch, "x");
-            int y = retrieve_int_attribute(stitch, "y");
-            int index = retrieve_int_attribute(stitch, "palindex");
+        stitch = stitch->FirstChildElement("stitch");
 
-            Thread *thread = palette[index - 1];
+        if (stitch != nullptr) {
+            while (true) {
+                // get data out
+                int x = retrieve_int_attribute(stitch, "x");
+                int y = retrieve_int_attribute(stitch, "y");
+                int index = retrieve_int_attribute(stitch, "palindex");
 
-            draw_stitch(Vector2i(x, (height - y)), thread);
+                Thread *thread = palette[index - 1];
 
-            stitch = stitch->NextSiblingElement("stitch");
-            if (stitch == nullptr)
-                break;
+                draw_stitch(Vector2i(x, (height - y)), thread);
+
+                stitch = stitch->NextSiblingElement("stitch");
+                if (stitch == nullptr)
+                    break;
+            }
         }
     }
 
     // TODO: Read part-stitch data
 
     XMLElement *backstitch = chart->FirstChildElement("backstitches");
-    backstitch = backstitch->FirstChildElement("backstitch");
-
     if (backstitch != nullptr) {
-        while (true) {
-            float x1 = retrieve_float_attribute(backstitch, "x1");
-            float y1 = retrieve_float_attribute(backstitch, "y1");
-            float x2 = retrieve_float_attribute(backstitch, "x2");
-            float y2 = retrieve_float_attribute(backstitch, "y2");
-            int index = retrieve_int_attribute(backstitch, "palindex");
-            // Objecttype attribute which can mean that some stitches are not backstitches
-            // but instead something complex like a daisy. Will ignore this and just render them
-            // as backstitches.
+        backstitch = backstitch->FirstChildElement("backstitch");
 
-            // There's a sequence attr also, but I don't render backstitches in such a way
-            // that the direction they are drawn in matters, so I'm ignoring it.
+        if (backstitch != nullptr) {
+            while (true) {
+                float x1 = retrieve_float_attribute(backstitch, "x1");
+                float y1 = retrieve_float_attribute(backstitch, "y1");
+                float x2 = retrieve_float_attribute(backstitch, "x2");
+                float y2 = retrieve_float_attribute(backstitch, "y2");
+                int index = retrieve_int_attribute(backstitch, "palindex");
+                // Objecttype attribute which can mean that some stitches are not backstitches
+                // but instead something complex like a daisy. Will ignore this and just render them
+                // as backstitches.
 
-            float width_f = (float)width;
-            float height_f = (float)height;
+                // There's a sequence attr also, but I don't render backstitches in such a way
+                // that the direction they are drawn in matters, so I'm ignoring it.
 
-            // clamp to 0..width/height
-            x1 = std::max(0.f, std::min(width_f, x1));
-            x2 = std::max(0.f, std::min(width_f, x2));
-            y1 = std::max(0.f, std::min(height_f, (height_f - y1 + 1)));
-            y2 = std::max(0.f, std::min(height_f, (height_f - y2 + 1)));
+                float width_f = (float)width;
+                float height_f = (float)height;
 
-            // round to whole or 0.5 increments
-            x1 = std::round(x1 * 2.f) / 2.f;
-            x2 = std::round(x2 * 2.f) / 2.f;
-            y1 = std::round(y1 * 2.f) / 2.f;
-            y2 = std::round(y2 * 2.f) / 2.f;
+                // clamp to 0..width/height
+                x1 = std::max(0.f, std::min(width_f, x1));
+                x2 = std::max(0.f, std::min(width_f, x2));
+                y1 = std::max(0.f, std::min(height_f, (height_f - y1 + 1)));
+                y2 = std::max(0.f, std::min(height_f, (height_f - y2 + 1)));
 
-            Thread *thread = palette[index - 1];
+                // round to whole or 0.5 increments
+                x1 = std::round(x1 * 2.f) / 2.f;
+                x2 = std::round(x2 * 2.f) / 2.f;
+                y1 = std::round(y1 * 2.f) / 2.f;
+                y2 = std::round(y2 * 2.f) / 2.f;
 
-            draw_backstitch(Vector2f(x1, y1), Vector2f(x2, y2), thread);
+                Thread *thread = palette[index - 1];
 
-            backstitch = backstitch->NextSiblingElement("backstitch");
-            if (backstitch == nullptr)
-                break;
+                draw_backstitch(Vector2f(x1, y1), Vector2f(x2, y2), thread);
+
+                backstitch = backstitch->NextSiblingElement("backstitch");
+                if (backstitch == nullptr)
+                    break;
+            }
+            collate_backstitches();
         }
     }
-    collate_backstitches();
 };
 
 void Project::draw_stitch(Vector2i stitch, Thread *thread) {
@@ -295,6 +299,70 @@ void Project::draw_backstitch(Vector2f start_stitch, Vector2f end_stitch, Thread
         throw std::runtime_error("Thread provided is not in this project's palette");
 
     backstitches.push_back(BackStitch(start_stitch, end_stitch, palette_index));
+}
+
+// Algorithm from: https://stackoverflow.com/a/1968345
+bool test_intersection(Vector2f p0, Vector2f p1, Vector2f p2, Vector2f p3) {
+    float s1_x, s1_y, s2_x, s2_y;
+    s1_x = p1[0] - p0[0];
+    s1_y = p1[1] - p0[1];
+    s2_x = p3[0] - p2[0];
+    s2_y = p3[1] - p2[1];
+
+    float s, t;
+    s = (-s1_y * (p0[0] - p2[0]) + s1_x * (p0[1] - p2[1])) / (-s2_x * s1_y + s1_x * s2_y);
+    t = ( s2_x * (p0[1] - p2[1]) - s2_y * (p0[0] - p2[0])) / (-s2_x * s1_y + s1_x * s2_y);
+
+    return s >= 0 && s <= 1 && t >= 0 && t <= 1;
+}
+
+void Project::erase_backstitches_intersecting(Vector2i stitch) {
+    std::vector<int> to_delete;
+
+    Vector2f substitches[9] = {
+        Vector2f(stitch),
+        Vector2f(stitch[0] + 0.5f, stitch[1]),
+        Vector2f(stitch[0] + 1.f, stitch[1]),
+        Vector2f(stitch[0], stitch[1] + 0.5f),
+        Vector2f(stitch[0] + 0.5f, stitch[1] + 0.5f),
+        Vector2f(stitch[0] + 1.f, stitch[1] + 0.5f),
+        Vector2f(stitch[0], stitch[1] + 1.f),
+        Vector2f(stitch[0] + 0.5f, stitch[1] + 1.f),
+        Vector2f(stitch[0] + 1.f, stitch[1] + 1.f),
+    };
+
+    std::pair<Vector2f, Vector2f> stitch_edges[4] = {
+        std::pair(substitches[6], substitches[8]), // top
+        std::pair(substitches[0], substitches[2]), // bottom
+        std::pair(substitches[0], substitches[6]), // left
+        std::pair(substitches[8], substitches[2])  // right
+    };
+
+    for (int i = 0; i < backstitches.size(); i++) {
+        BackStitch bs = backstitches[i];
+
+        for (Vector2f ss : substitches) {
+            if (bs.end == ss || bs.start == ss) {
+                to_delete.push_back(i);
+                goto deleted;
+            }
+        }
+
+        for (std::pair<Vector2f, Vector2f> edge : stitch_edges) {
+            if (test_intersection(bs.start, bs.end, edge.first, edge.second)) {
+                to_delete.push_back(i);
+                goto deleted;
+            }
+        }
+deleted: // continue to check next backstitch
+    continue;
+    }
+
+    // Delete all intersecting backstitches
+    std::vector<int>::reverse_iterator rit;
+    for (auto rit = to_delete.rbegin(); rit != to_delete.rend(); rit++) {
+        backstitches.erase(backstitches.begin() + *rit);
+    }
 }
 
 void Project::collate_backstitches() {
@@ -464,7 +532,20 @@ void Project::save(const char *filepath, XStitchEditorApplication *app) {
         }
     }
 
-    // TODO: Write backstitch data
+    XMLElement *back_stitches_element = chart_element->InsertNewChildElement("backstitches");
+    XMLElement *backstitch_element;
+
+    collate_backstitches();
+    for (BackStitch bs : backstitches) {
+        backstitch_element = back_stitches_element->InsertNewChildElement("backstitch");
+        backstitch_element->SetAttribute("x1", bs.start[0]);
+        backstitch_element->SetAttribute("y1", (float)height - bs.start[1] + 1);
+        backstitch_element->SetAttribute("x2", bs.end[0]);
+        backstitch_element->SetAttribute("y2", (float)height - bs.end[1] + 1);
+        backstitch_element->SetAttribute("palindex", bs.palette_index + 1);
+        backstitch_element->SetAttribute("objecttype", "backstitch");
+        backstitch_element->SetAttribute("sequence", 0);
+    }
 
     doc.SaveFile(filepath);
 }

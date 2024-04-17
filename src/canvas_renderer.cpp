@@ -13,27 +13,28 @@
 
 using namespace nanogui;
 
-CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) {
+CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) :
+    _camera(new Camera2D(app, app->_project->width, app->_project->height)),
+    _render_pass(new RenderPass({app})),
+    _texture(new Texture(
+        Texture::PixelFormat::RGBA, Texture::ComponentFormat::UInt8,
+        Vector2i(app->_project->width, app->_project->height),
+        Texture::InterpolationMode::Bilinear, Texture::InterpolationMode::Nearest
+    )),
+    _cross_stitch_shader(new Shader(_render_pass.get(), "cross_stitches", CROSS_STITCH_VERT, CROSS_STITCH_FRAG)),
+    _minor_grid_shader(new Shader(_render_pass.get(), "minor_grid", MINOR_GRID_VERT, MINOR_GRID_FRAG)),
+    _major_grid_shader(new Shader(_render_pass.get(), "major_grid", MAJOR_GRID_VERT, MAJOR_GRID_FRAG)),
+    _back_stitch_shader(new Shader(_render_pass.get(), "back_stitch", BACK_STITCH_VERT, BACK_STITCH_FRAG)),
+    _back_stitch_ghost_shader(new Shader(_render_pass.get(), "back_stitch_ghost", BACK_STITCH_VERT, BACK_STITCH_FRAG))
+{
     _app = app;
     int width = app->_project->width;
     int height = app->_project->height;
-    _camera = new Camera2D(_app, width, height);
 
-    _texture = new Texture(
-        Texture::PixelFormat::RGBA, Texture::ComponentFormat::UInt8,
-        Vector2i(width, height),
-        Texture::InterpolationMode::Bilinear, Texture::InterpolationMode::Nearest);
     _texture->upload(_app->_project->texture_data_array.get());
 
-    _render_pass = new RenderPass({ app });
     _render_pass->set_clear_color(0, Color(0.3f, 0.3f, 0.32f, 1.f));
     _render_pass->set_cull_mode(RenderPass::CullMode::Disabled);
-
-    _cross_stitch_shader = new Shader(_render_pass, "cross_stitches", CROSS_STITCH_VERT, CROSS_STITCH_FRAG);
-    _minor_grid_shader = new Shader(_render_pass, "minor_grid", MINOR_GRID_VERT, MINOR_GRID_FRAG);
-    _major_grid_shader = new Shader(_render_pass, "major_grid", MAJOR_GRID_VERT, MAJOR_GRID_FRAG);
-    _back_stitch_shader = new Shader(_render_pass, "back_stitch", BACK_STITCH_VERT, BACK_STITCH_FRAG);
-    _back_stitch_ghost_shader = new Shader(_render_pass, "back_stitch_ghost", BACK_STITCH_VERT, BACK_STITCH_FRAG);
 
     if (width > height) {
         _v = (float)height / (float)width;
@@ -64,7 +65,7 @@ CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) {
     _cross_stitch_shader->set_buffer("position", VariableType::Float32, {4, 3}, _position);
     _cross_stitch_shader->set_buffer("tex", VariableType::Float32, {4, 2}, tex);
     _cross_stitch_shader->set_buffer("indices", VariableType::UInt32, {3*2}, indices);
-    _cross_stitch_shader->set_texture("cross_stitch_texture", _texture);
+    _cross_stitch_shader->set_texture("cross_stitch_texture", _texture.get());
 
     _minor_grid_mark_distance = 2.f / (float)std::max(width, height); // ndc space is 2.f long in the axis that is largest
     float major_grid_mark_distance = _minor_grid_mark_distance * 10.f;
@@ -171,8 +172,7 @@ CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) {
         _major_grid_shader->set_buffer("corner", VariableType::UInt8, {(size_t)major_gridmark_corner_size}, major_gridmark_corner);
         _major_grid_shader->set_buffer("colour", VariableType::Float32, {4}, major_color);
     } else {
-        delete _major_grid_shader;
-        _major_grid_shader = nullptr;
+        _major_grid_shader.release();
     }
 };
 

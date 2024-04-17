@@ -239,7 +239,7 @@ bool XStitchEditorApplication::keyboard_event(int key, int scancode, int action,
         }
     }
 
-    Camera2D *camera = _canvas_renderer->_camera;
+    std::shared_ptr<Camera2D> camera = _canvas_renderer->_camera;
     float camera_speed = 2 * _time_delta;
 
     if (key == GLFW_KEY_LEFT)
@@ -291,7 +291,7 @@ bool XStitchEditorApplication::mouse_button_event(const Vector2i &p, int button,
     if (button != GLFW_MOUSE_BUTTON_1 && button != GLFW_MOUSE_BUTTON_2)
         return false;
 
-    Camera2D *camera = _canvas_renderer->_camera;
+    std::shared_ptr<Camera2D> camera = _canvas_renderer->_camera;
     Vector2f mouse_ndc;
 
     try {
@@ -354,9 +354,8 @@ bool XStitchEditorApplication::mouse_button_event(const Vector2i &p, int button,
                 _project->erase_stitch(selected_stitch);
                 _canvas_renderer->upload_texture();
 
-                // TODO: find out if any backstitches intersect the selected stitch
-                // or if the selected substitch is the start/end of a backstitch
-                // erase if so!
+                _project->erase_backstitches_intersecting(selected_stitch);
+                _canvas_renderer->update_backstitch_buffers();
                 break;
             case ToolOptions::FILL:
                 _project->fill_from_stitch(selected_stitch, _selected_thread);
@@ -391,7 +390,7 @@ bool XStitchEditorApplication::mouse_motion_event(const Vector2i &p, const Vecto
     int button_1 = GLFW_MOUSE_BUTTON_1;
 #endif
 
-    Camera2D *camera = _canvas_renderer->_camera;
+    std::shared_ptr<Camera2D> camera = _canvas_renderer->_camera;
 
     // Halfway through drawing a backstitch
     if (_selected_tool == ToolOptions::BACK_STITCH && _previous_backstitch_point != NO_SUBSTITCH_SELECTED) {
@@ -444,9 +443,12 @@ bool XStitchEditorApplication::mouse_motion_event(const Vector2i &p, const Vecto
                 }
                 break;
             case ToolOptions::ERASE:
+                // TODO: erasing while moving isn't working as I'd expect, look into it
                 _project->erase_stitch(selected_stitch);
                 _canvas_renderer->upload_texture();
 
+                _project->erase_backstitches_intersecting(selected_stitch);
+                _canvas_renderer->update_backstitch_buffers();
                 break;
             default:
                 break;

@@ -54,6 +54,8 @@ struct Project
     void fill_from_stitch(nanogui::Vector2i stitch, Thread *thread);
     // Draws a single backstitch to the canvas. Throws std::runtime_error if the thread provided is not in the project palette.
     void draw_backstitch(nanogui::Vector2f start_stitch, nanogui::Vector2f end_stitch, Thread *thread);
+    // Erases any backstitches that begin/end at the given stitch, or intersect it
+    void erase_backstitches_intersecting(nanogui::Vector2i stitch);
     // Finds and combines backstitches with the same vector that connect.
     void collate_backstitches();
     // Returns the thread at the stitch provided (or nullptr if there are none).

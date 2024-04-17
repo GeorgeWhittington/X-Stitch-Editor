@@ -16,9 +16,7 @@ public:
     void upload_texture();
     void render();
 
-    // TODO: smart ptr this! maybe use shared_ptr since other stuff uses it?
-    // Though I suppose that's only via this cls, so maybe unique ptr could be fine
-    Camera2D *_camera;
+    std::shared_ptr<Camera2D> _camera;
     float _position[3*4];
     nanogui::Vector2i _selected_stitch = NO_STITCH_SELECTED;
     nanogui::Vector2f _selected_sub_stitch = NO_SUBSTITCH_SELECTED;
@@ -34,14 +32,13 @@ private:
 
     XStitchEditorApplication *_app;
 
-    // TODO: consider smart pointers for all of these *or* delete them in the destructor. unique_ptr
-    nanogui::RenderPass *_render_pass;
-    nanogui::Shader *_cross_stitch_shader;
-    nanogui::Shader *_minor_grid_shader;
-    nanogui::Shader *_major_grid_shader;
-    nanogui::Shader *_back_stitch_shader;
-    nanogui::Shader *_back_stitch_ghost_shader;
-    nanogui::Texture *_texture;
+    std::unique_ptr<nanogui::RenderPass> _render_pass;
+    std::unique_ptr<nanogui::Shader> _cross_stitch_shader;
+    std::unique_ptr<nanogui::Shader> _minor_grid_shader;
+    std::unique_ptr<nanogui::Shader> _major_grid_shader;
+    std::unique_ptr<nanogui::Shader> _back_stitch_shader;
+    std::unique_ptr<nanogui::Shader> _back_stitch_ghost_shader;
+    std::unique_ptr<nanogui::Texture> _texture;
 
     float _canvas_height_ndc;
     float _minor_grid_mark_distance;
