@@ -13,10 +13,6 @@ struct Vector2iCompare {
     }
 };
 
-bool compareBackstitch(BackStitch bs1, BackStitch bs2) {
-    return bs1.palette_index > bs2.palette_index;
-}
-
 std::string retrieve_string_attribute(tinyxml2::XMLElement *element, const char *key) {
     const char *string_attr;
     tinyxml2::XMLError err = element->QueryStringAttribute(key, &string_attr);
@@ -155,8 +151,6 @@ Project::Project(const char *project_path, std::map<std::string, std::map<std::s
 
     // TODO: Read part-stitch data
 
-    // TODO: Read backstitch data
-
     XMLElement *backstitch = chart->FirstChildElement("backstitches");
     backstitch = backstitch->FirstChildElement("backstitch");
 
@@ -191,9 +185,7 @@ Project::Project(const char *project_path, std::map<std::string, std::map<std::s
 
             Thread *thread = palette[index - 1];
 
-            // TODO: testing, remove
-            if (index != 1)
-                draw_backstitch(Vector2f(x1, y1), Vector2f(x2, y2), thread);
+            draw_backstitch(Vector2f(x1, y1), Vector2f(x2, y2), thread);
 
             backstitch = backstitch->NextSiblingElement("backstitch");
             if (backstitch == nullptr)
@@ -201,7 +193,6 @@ Project::Project(const char *project_path, std::map<std::string, std::map<std::s
         }
     }
     collate_backstitches();
-    sort_backstitches();
 };
 
 void Project::draw_stitch(Vector2i stitch, Thread *thread) {
@@ -301,10 +292,6 @@ void Project::draw_backstitch(Vector2f start_stitch, Vector2f end_stitch, Thread
         throw std::runtime_error("Thread provided is not in this project's palette");
 
     backstitches.push_back(BackStitch(start_stitch, end_stitch, palette_index));
-}
-
-void Project::sort_backstitches() {
-    std::sort(backstitches.begin(), backstitches.end(), compareBackstitch);
 }
 
 void Project::collate_backstitches() {

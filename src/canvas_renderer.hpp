@@ -224,37 +224,7 @@ const std::string BACK_STITCH_FRAG = R"(
     }
 )";
 
-const std::string BACK_STITCH_CAP_VERT = R"(
-    using namespace metal;
-    struct VertexOut {
-        float4 position [[position]];
-        float4 frag_colour;
-    };
-
-    vertex VertexOut vertex_main(const device packed_float2 *position,
-                                 const device float4 *colour,
-                                 constant float4x4 &mvp,
-                                 uint id [[vertex_id]]) {
-        VertexOut vert;
-        vert.position = mvp * float4(position[id], 0.f, 1.f);
-        vert.frag_colour = colour[id];
-        return vert;
-    }
-)";
-const std::string BACK_STITCH_CAP_FRAG = R"(
-    using namespace metal;
-
-    struct VertexOut {
-        float4 position [[position]];
-        float4 frag_colour;
-    };
-
-    fragment float4 fragment_main(VertexOut vert [[stage_in]]) {
-        return vert.frag_colour;
-    }
-)";
-
-const std::string GRID_VERT = R"(
+const std::string MINOR_GRID_VERT = R"(
     using namespace metal;
     struct VertexOut {
         float4 position [[position]];
@@ -268,7 +238,49 @@ const std::string GRID_VERT = R"(
         return vert;
     }
 )";
-const std::string GRID_FRAG = R"(
+const std::string MINOR_GRID_FRAG = R"(
+    using namespace metal;
+
+    struct VertexOut {
+        float4 position [[position]];
+    };
+
+    fragment float4 fragment_main(VertexOut vert [[stage_in]],
+                                  constant float4 &colour) {
+        return colour;
+    }
+)";
+
+const std::string MAJOR_GRID_VERT = R"(
+    using namespace metal;
+    struct VertexOut {
+        float4 position [[position]];
+    };
+
+    vertex VertexOut vertex_main(const device packed_float2 *position,
+                                 const device uint8_t *corner,
+                                 constant float &normal,
+                                 constant float4x4 &mvp,
+                                 uint id [[vertex_id]]) {
+        float4 pos = mvp * float4(position[id], 0.f, 1.f);
+
+        if (corner[id] == 0 || corner[id] == 1) {
+            pos = float4(pos.x - normal, pos.yzw);
+        } else if (corner[id] == 2 || corner[id] == 3) {
+            pos = float4(pos.x + normal, pos.yzw);
+        } else if (corner[id] == 4 || corner[id] == 5) {
+            pos = float4(pos.x, pos.y - normal, pos.zw);
+        } else if (corner[id] == 6 || corner[id] == 7) {
+            pos = float4(pos.x, pos.y + normal, pos.zw);
+        }
+
+        VertexOut vert;
+        vert.position = pos;
+        return vert;
+    }
+)";
+// TODO: AntiAliasing!!
+const std::string MAJOR_GRID_FRAG = R"(
     using namespace metal;
 
     struct VertexOut {

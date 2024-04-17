@@ -57,8 +57,6 @@ struct Project
     void fill_from_stitch(Vector2i stitch, Thread *thread);
     // Draws a single backstitch to the canvas. Throws std::runtime_error if the thread provided is not in the project palette.
     void draw_backstitch(Vector2f start_stitch, Vector2f end_stitch, Thread *thread);
-    // Sorts the backstitches according to their palette_index, high to low.
-    void sort_backstitches();
     // Finds and combines backstitches with the same vector that connect.
     void collate_backstitches();
     // Returns the thread at the stitch provided (or nullptr if there are none).

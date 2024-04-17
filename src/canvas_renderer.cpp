@@ -30,10 +30,9 @@ CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) {
     _render_pass->set_cull_mode(RenderPass::CullMode::Disabled);
 
     _cross_stitch_shader = new Shader(_render_pass, "cross_stitches", CROSS_STITCH_VERT, CROSS_STITCH_FRAG);
-    _minor_grid_shader = new Shader(_render_pass, "minor_grid", GRID_VERT, GRID_FRAG);
-    _major_grid_shader = new Shader(_render_pass, "major_grid", GRID_VERT, GRID_FRAG);
+    _minor_grid_shader = new Shader(_render_pass, "minor_grid", MINOR_GRID_VERT, MINOR_GRID_FRAG);
+    _major_grid_shader = new Shader(_render_pass, "major_grid", MAJOR_GRID_VERT, MAJOR_GRID_FRAG);
     _back_stitch_shader = new Shader(_render_pass, "back_stitch", BACK_STITCH_VERT, BACK_STITCH_FRAG);
-    _back_stitch_cap_shader = new Shader(_render_pass, "back_stitch_cap", BACK_STITCH_CAP_VERT, BACK_STITCH_CAP_FRAG);
 
     if (width > height) {
         _v = (float)height / (float)width;
@@ -68,13 +67,14 @@ CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) {
 
     _minor_grid_mark_distance = 2.f / (float)std::max(width, height); // ndc space is 2.f long in the axis that is largest
     float major_grid_mark_distance = _minor_grid_mark_distance * 10.f;
-    float major_grid_mark_normal = _minor_grid_mark_distance * 0.125f;
 
     int width_minus_1 = width - 1;
     int height_minus_1 = height - 1;
 
     _minor_grid_total_verts = (height_minus_1 * 4) + (width_minus_1 * 4);
-    int major_grid_total_verts = ((height_minus_1 / 10) * 8) + ((width_minus_1 / 10) * 8);
+    int major_grid_total_horizontal_verts = (height_minus_1 / 10) * 8;
+    int major_grid_total_vertical_verts = (width_minus_1 / 10) * 8;
+    int major_grid_total_verts = major_grid_total_horizontal_verts + major_grid_total_vertical_verts;
     float minor_gridmarks[_minor_grid_total_verts];
     float major_gridmarks[major_grid_total_verts];
 
@@ -101,13 +101,13 @@ CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) {
     for (int i = 0; i < (width_minus_1 / 10); i++) {
         x += major_grid_mark_distance;
         // four points, forming a line when drawn as a long rectangle
-        major_gridmarks[8*i]       = x - major_grid_mark_normal;
+        major_gridmarks[8*i]       = x; // - normal
         major_gridmarks[(8*i) + 1] = _v;
-        major_gridmarks[(8*i) + 2] = x - major_grid_mark_normal;
+        major_gridmarks[(8*i) + 2] = x; // - normal
         major_gridmarks[(8*i) + 3] = -_v;
-        major_gridmarks[(8*i) + 4] = x + major_grid_mark_normal;
+        major_gridmarks[(8*i) + 4] = x; // + normal
         major_gridmarks[(8*i) + 5] = _v;
-        major_gridmarks[(8*i) + 6] = x + major_grid_mark_normal;
+        major_gridmarks[(8*i) + 6] = x; // + normal
         major_gridmarks[(8*i) + 7] = -_v;
     }
 
@@ -115,13 +115,13 @@ CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) {
     for (int i = (width_minus_1 / 10); i < (height_minus_1 / 10) + (width_minus_1 / 10); i++) {
         y += major_grid_mark_distance;
         major_gridmarks[8*i]       = _h;
-        major_gridmarks[(8*i) + 1] = y - major_grid_mark_normal;
+        major_gridmarks[(8*i) + 1] = y;
         major_gridmarks[(8*i) + 2] = -_h;
-        major_gridmarks[(8*i) + 3] = y - major_grid_mark_normal;
+        major_gridmarks[(8*i) + 3] = y;
         major_gridmarks[(8*i) + 4] = _h;
-        major_gridmarks[(8*i) + 5] = y + major_grid_mark_normal;
+        major_gridmarks[(8*i) + 5] = y;
         major_gridmarks[(8*i) + 6] = -_h;
-        major_gridmarks[(8*i) + 7] = y + major_grid_mark_normal;
+        major_gridmarks[(8*i) + 7] = y;
     }
 
     _major_grid_indices_size = (major_grid_total_verts / 4) * 6;
@@ -137,6 +137,21 @@ CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) {
         i++;
     };
 
+    int major_gridmark_corner_size = major_grid_total_verts / 2;
+    uint8_t major_gridmark_corner[major_gridmark_corner_size];
+    for (int i = 0; i < major_grid_total_vertical_verts / 8; i++) {
+        major_gridmark_corner[(4*i)]     = 0;
+        major_gridmark_corner[(4*i) + 1] = 1;
+        major_gridmark_corner[(4*i) + 2] = 2;
+        major_gridmark_corner[(4*i) + 3] = 3;
+    }
+    for (int i = major_grid_total_vertical_verts / 8; i < major_gridmark_corner_size / 4; i++) {
+        major_gridmark_corner[(4*i)]     = 4;
+        major_gridmark_corner[(4*i) + 1] = 5;
+        major_gridmark_corner[(4*i) + 2] = 6;
+        major_gridmark_corner[(4*i) + 3] = 7;
+    }
+
     float minor_color[4] = {0.5f, 0.5f, 0.5f, 1.f};
     float major_color[4] = {0.f, 0.f, 0.f, 1.f};
 
@@ -146,6 +161,7 @@ CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) {
     if (major_grid_total_verts > 0) {
         _major_grid_shader->set_buffer("position", VariableType::Float32, {(size_t)(major_grid_total_verts) / 2, 2}, major_gridmarks);
         _major_grid_shader->set_buffer("indices", VariableType::UInt32, {(size_t)_major_grid_indices_size}, major_grid_indices);
+        _major_grid_shader->set_buffer("corner", VariableType::UInt8, {(size_t)major_gridmark_corner_size}, major_gridmark_corner);
         _major_grid_shader->set_buffer("colour", VariableType::Float32, {4}, major_color);
     } else {
         delete _major_grid_shader;
@@ -153,7 +169,7 @@ CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) {
     }
 };
 
-void create_circle_vertices(float cx, float cy, float r, int num_segments, std::vector<float> *buffer) {
+void create_circle_vertices(Vector2f center, float r, int num_segments, std::vector<float> *buffer) {
     float theta = 3.1415926 * 2 / float(num_segments);
     float tangetial_factor = tanf(theta);
     float radial_factor = cosf(theta);
@@ -162,13 +178,13 @@ void create_circle_vertices(float cx, float cy, float r, int num_segments, std::
     float y = 0;
 
     // center vertex
-    buffer->push_back(cx);
-    buffer->push_back(cy);
+    buffer->push_back(center[0]);
+    buffer->push_back(center[1]);
 
     for (int i = 0; i < num_segments; i++)
     {
-        buffer->push_back(x + cx);
-        buffer->push_back(y + cy);
+        buffer->push_back(x + center[0]);
+        buffer->push_back(y + center[1]);
 
         // calculate the tangential vector
         // remember, the radial vector is (x, y)
@@ -186,143 +202,92 @@ void create_circle_vertices(float cx, float cy, float r, int num_segments, std::
     }
 }
 
+void create_line_vertices(Vector2f start, Vector2f end, Vector2f normal_vector, std::vector<float> *buffer) {
+    buffer->push_back(start[0] + normal_vector[0]);
+    buffer->push_back(start[1] + normal_vector[1]);
+    buffer->push_back(start[0] - normal_vector[0]);
+    buffer->push_back(start[1] - normal_vector[1]);
+    buffer->push_back(end[0] + normal_vector[0]);
+    buffer->push_back(end[1] + normal_vector[1]);
+    buffer->push_back(end[0] - normal_vector[0]);
+    buffer->push_back(end[1] - normal_vector[1]);
+}
+
+const u_int32_t circle_vert_layout[50 * 3] = {
+    0, 1, 2,    0, 2, 3,    0, 3, 4,    0, 4, 5,
+    0, 5, 6,    0, 6, 7,    0, 7, 8,    0, 8, 9,
+    0, 9, 10,   0, 10, 11,  0, 11, 12,  0, 12, 13,
+    0, 13, 14,  0, 14, 15,  0, 15, 16,  0, 16, 17,
+    0, 17, 18,  0, 18, 19,  0, 19, 20,  0, 20, 21,
+    0, 21, 22,  0, 22, 23,  0, 23, 24,  0, 24, 25,
+    0, 25, 26,  0, 26, 27,  0, 27, 28,  0, 28, 29,
+    0, 29, 30,  0, 30, 31,  0, 31, 32,  0, 32, 33,
+    0, 33, 34,  0, 34, 35,  0, 35, 36,  0, 36, 37,
+    0, 37, 38,  0, 38, 39,  0, 39, 40,  0, 40, 41,
+    0, 41, 42,  0, 42, 43,  0, 43, 44,  0, 44, 45,
+    0, 45, 46,  0, 46, 47,  0, 47, 48,  0, 48, 49,
+    0, 49, 50,  0, 50, 1
+};
+
 void CanvasRenderer::update_backstitch_buffers() {
-    // TODO: should entirely change approach and draw line + circle in the same
-    // shader. What I have right now isn't possible to draw in a way where the
-    // lines and caps don't interact weirdly. (ie cap from line 1 appearing on
-    // top of line 2 when line 2 is drawn ontop of line 1)
     std::vector<BackStitch> *backstitches = &_app->_project->backstitches;
     int no_backstitches = backstitches->size();
-
-    // TODO: will this look fine at all zoom levels?
-    // may need to consider geometry shaders if it won't
-    // Or just send 2x start point + 2x end point for each line and
-    // calculate + offset those points inside the vertex shader using data passed in?
+    int no_circle_verts = 50;
     float normal = _minor_grid_mark_distance * 0.125f;
+    int total_verts_per_segment = no_circle_verts + no_circle_verts + 2 + 4; // two circles and a line
 
-    float backstitch_positions[8 * no_backstitches]; // 4 positions per bs, each position takes 2 values
-    float backstitch_colours[4 * 4 * no_backstitches]; // 4 channel colour for each position
+    std::vector<float> backstitch_positions;
+    std::vector<float> backstitch_colours;
+    std::vector<u_int32_t> backstitch_indices;
 
-    for (int i = 0; i < no_backstitches; i++) {
-        BackStitch bs = backstitches->at(i);
-        Thread *t = _app->_project->palette[bs.palette_index];
-        Color c = t->color();
-
-        Vector2f line_vector = bs.end - bs.start;
-        Vector2f perpendicular_vector = normalize(Vector2f(line_vector[1], -line_vector[0]));
-
+    for (BackStitch bs : *backstitches) {
         Vector2f start_ndc = (bs.start * _minor_grid_mark_distance) - Vector2f(_h, _v);
         Vector2f end_ndc = (bs.end * _minor_grid_mark_distance) - Vector2f(_h, _v);
+
+        // circle at start
+        uint32_t circle_start = backstitch_positions.size() == 0 ? 0 : backstitch_positions.size() / 2;
+        create_circle_vertices(start_ndc, normal, no_circle_verts, &backstitch_positions);
+        for (u_int32_t indices : circle_vert_layout)
+            backstitch_indices.push_back(indices + circle_start);
+
+        // line
+        Vector2f line_vector = bs.end - bs.start;
+        Vector2f perpendicular_vector = normalize(Vector2f(line_vector[1], -line_vector[0]));
         Vector2f normal_vector = normal * perpendicular_vector;
 
-        backstitch_positions[(8*i)]     = start_ndc[0] + normal_vector[0];
-        backstitch_positions[(8*i) + 1] = start_ndc[1] + normal_vector[1];
-        backstitch_positions[(8*i) + 2] = start_ndc[0] - normal_vector[0];
-        backstitch_positions[(8*i) + 3] = start_ndc[1] - normal_vector[1];
-        backstitch_positions[(8*i) + 4] = end_ndc[0] + normal_vector[0];
-        backstitch_positions[(8*i) + 5] = end_ndc[1] + normal_vector[1];
-        backstitch_positions[(8*i) + 6] = end_ndc[0] - normal_vector[0];
-        backstitch_positions[(8*i) + 7] = end_ndc[1] - normal_vector[1];
+        uint32_t line_start = backstitch_positions.size() == 0 ? 0 : backstitch_positions.size() / 2;
+        create_line_vertices(start_ndc, end_ndc, normal_vector, &backstitch_positions);
 
-        for (int j = 0; j < 4; j++) {
-            backstitch_colours[(16*i) + 0 + (4*j)] = c.r();
-            backstitch_colours[(16*i) + 1 + (4*j)] = c.g();
-            backstitch_colours[(16*i) + 2 + (4*j)] = c.b();
-            backstitch_colours[(16*i) + 3 + (4*j)] = c.a();
+        backstitch_indices.push_back(line_start + 2);
+        backstitch_indices.push_back(line_start + 1);
+        backstitch_indices.push_back(line_start + 0);
+        backstitch_indices.push_back(line_start + 3);
+        backstitch_indices.push_back(line_start + 1);
+        backstitch_indices.push_back(line_start + 2);
+
+        // circle at end
+        circle_start = backstitch_positions.size() == 0 ? 0 : backstitch_positions.size() / 2;
+        create_circle_vertices(end_ndc, normal, no_circle_verts, &backstitch_positions);
+        for (u_int32_t indices : circle_vert_layout)
+            backstitch_indices.push_back(indices + circle_start);
+
+        // colour for all vertices
+        Thread *t = _app->_project->palette[bs.palette_index];
+        Color c = t->color();
+        for (int i = 0; i < total_verts_per_segment; i++) {
+            backstitch_colours.push_back(c.r());
+            backstitch_colours.push_back(c.g());
+            backstitch_colours.push_back(c.b());
+            backstitch_colours.push_back(c.a());
         }
     }
 
-    _backstitch_indices_size = 6 * no_backstitches;
-    uint32_t backstitch_indices[_backstitch_indices_size];
-    for (int i = 0; i < no_backstitches; i++) {
-        backstitch_indices[6*i]       = (i*4) + 2;
-        backstitch_indices[(6*i) + 1] = (i*4) + 1;
-        backstitch_indices[(6*i) + 2] = (i*4) + 0;
-        backstitch_indices[(6*i) + 3] = (i*4) + 3;
-        backstitch_indices[(6*i) + 4] = (i*4) + 1;
-        backstitch_indices[(6*i) + 5] = (i*4) + 2;
-    }
+    _backstitch_indices_size = backstitch_indices.size();
 
     if (no_backstitches > 0) {
-        _back_stitch_shader->set_buffer("position", VariableType::Float32, {(size_t)no_backstitches * 4, 2}, backstitch_positions);
-        _back_stitch_shader->set_buffer("indices", VariableType::UInt32, {(size_t)_backstitch_indices_size}, backstitch_indices);
-        _back_stitch_shader->set_buffer("colour", VariableType::Float32, {(size_t)no_backstitches * 4 * 4}, backstitch_colours);
-    }
-
-    // Find all unique backstitch end points. Override colour
-    // if a lower palette index can be found for a point, because
-    // line segments are drawn with lower palette indexes last
-    std::vector<std::pair<Vector2f, int>> backstitch_caps;
-    for (const BackStitch bs : *backstitches) {
-        Vector2f points[2] = {bs.start, bs.end};
-
-        for (const Vector2f point : points) {
-            bool already_contained = false;
-            for (auto itr = backstitch_caps.begin(); itr < backstitch_caps.end(); itr++) {
-                if ((*itr).first == point) {
-                    already_contained = true;
-                    if ((*itr).second > bs.palette_index)
-                        (*itr).second = bs.palette_index;
-                    break;
-                }
-            }
-            if (!already_contained)
-                backstitch_caps.push_back({point, bs.palette_index});
-        }
-    }
-
-    // construct positions for one circle that is centered on (-h, -v)
-    // provide indices and repeat indices for n.o. circles I wanna make
-    // provide transformation buffer that describes how each circle should be adjusted? (coords * width of one stitch in ndc)
-
-    int no_backstitch_caps = backstitch_caps.size();
-    int no_circle_verts = 50;
-
-    int positions_per_cap = no_circle_verts + 1;
-    int backstitch_cap_positions_size = positions_per_cap * no_backstitch_caps * 2;
-    std::vector<float> backstitch_cap_positions;
-    backstitch_cap_positions.reserve(backstitch_cap_positions_size);
-
-    _backstitch_cap_indices_size = no_circle_verts * 3 * no_backstitch_caps;
-    uint32_t backstitch_cap_indices[_backstitch_cap_indices_size];
-
-    int backstitch_cap_colours_size = positions_per_cap * no_backstitch_caps * 4;
-    std::vector<float> backstitch_cap_colours;
-    backstitch_cap_colours.reserve(backstitch_cap_colours_size);
-
-    for (int i = 0; i < no_backstitch_caps; i++) {
-        Vector2f center = backstitch_caps[i].first;
-        Vector2f center_ndc = (center * _minor_grid_mark_distance) - Vector2f(_h, _v);
-
-        create_circle_vertices(center_ndc[0], center_ndc[1], normal, no_circle_verts, &backstitch_cap_positions);
-
-        int stride = no_circle_verts * 3;
-        for (int j = 0; j < no_circle_verts; j++) {
-            backstitch_cap_indices[(stride*i) + (3*j)]     = (i * positions_per_cap);
-            backstitch_cap_indices[(stride*i) + (3*j) + 1] = (i * positions_per_cap) + j + 1;
-            backstitch_cap_indices[(stride*i) + (3*j) + 2] = (i * positions_per_cap) + j + 2;
-
-            if (j == no_circle_verts - 1)
-                backstitch_cap_indices[(stride*i) + (3*j) + 2] = (i * positions_per_cap) + 1;
-        }
-
-        Thread *t = _app->_project->palette[backstitch_caps[i].second];
-        float r = t->color().r();
-        float g = t->color().g();
-        float b = t->color().b();
-
-        for (int j = 0; j < positions_per_cap; j++) {
-            backstitch_cap_colours.push_back(r);
-            backstitch_cap_colours.push_back(g);
-            backstitch_cap_colours.push_back(b);
-            backstitch_cap_colours.push_back(1.f);
-        }
-    }
-
-    if (no_backstitch_caps > 0) {
-        _back_stitch_cap_shader->set_buffer("position", VariableType::Float32, {(size_t)positions_per_cap * no_backstitch_caps, 2}, backstitch_cap_positions.data());
-        _back_stitch_cap_shader->set_buffer("indices", VariableType::UInt32, {(size_t)_backstitch_cap_indices_size}, backstitch_cap_indices);
-        _back_stitch_cap_shader->set_buffer("colour", VariableType::Float32, {(size_t)backstitch_cap_colours_size}, backstitch_cap_colours.data());
+        _back_stitch_shader->set_buffer("position", VariableType::Float32, {backstitch_positions.size() / 2, 2}, backstitch_positions.data());
+        _back_stitch_shader->set_buffer("indices", VariableType::UInt32, {(size_t)_backstitch_indices_size}, backstitch_indices.data());
+        _back_stitch_shader->set_buffer("colour", VariableType::Float32, {backstitch_colours.size()}, backstitch_colours.data());
     }
 }
 
@@ -365,12 +330,11 @@ void CanvasRenderer::render() {
     _render_pass->begin();
 
     render_cs_shader(mvp);
-    if (minor_grid_mark_pixel_distance >= 15.f) {
+    if (minor_grid_mark_pixel_distance >= 20.f) {
         render_minor_grid_shader(mvp);
         render_major_grid_shader(mvp);
     }
     render_back_stitch_shader(mvp);
-    render_back_stitch_cap_shader(mvp);
 
     _render_pass->end();
 };
@@ -402,6 +366,12 @@ void CanvasRenderer::render_major_grid_shader(Matrix4f mvp) {
     if (_major_grid_shader == nullptr)
         return;
 
+    // find distance in ortho ndc of two pixels
+    Vector2f p1 = _camera->screen_to_ortho_ndc(Vector2i(0, 0));
+    Vector2f p2 = _camera->screen_to_ortho_ndc(Vector2i(0, 1));
+    float normal = p2[1] - p1[1];
+
+    _major_grid_shader->set_uniform("normal", normal);
     _major_grid_shader->set_uniform("mvp", mvp);
 
     _major_grid_shader->begin();
@@ -420,16 +390,4 @@ void CanvasRenderer::render_back_stitch_shader(Matrix4f mvp) {
     _back_stitch_shader->draw_array(Shader::PrimitiveType::Triangle, 0,
                                     _backstitch_indices_size, true);
     _back_stitch_shader->end();
-}
-
-void CanvasRenderer::render_back_stitch_cap_shader(Matrix4f mvp) {
-    if (_back_stitch_cap_shader == nullptr || _backstitch_cap_indices_size == 0)
-        return;
-
-    _back_stitch_cap_shader->set_uniform("mvp", mvp);
-
-    _back_stitch_cap_shader->begin();
-    _back_stitch_cap_shader->draw_array(Shader::PrimitiveType::Triangle, 0,
-                                        _backstitch_cap_indices_size, true);
-    _back_stitch_cap_shader->end();
 }
