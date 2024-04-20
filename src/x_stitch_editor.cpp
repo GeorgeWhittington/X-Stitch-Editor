@@ -20,7 +20,7 @@
 
 using namespace nanogui;
 
-std::vector<std::pair<std::string, std::string>> permitted_files = {{"oxs", "Open Cross Stitch"}};
+std::vector<std::pair<std::string, std::string>> permitted_files = {{"oxs", "Open Cross Stitch"}, {"OXS", "Open Cross Stitch"}};
 
 void ExitToMainMenuWindow::initialise() {
     set_position(Vector2i(10, 10));

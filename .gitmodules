@@ -10,3 +10,6 @@
 [submodule "third_party/glm"]
 	path = third_party/glm
 	url = https://github.com/g-truc/glm
+[submodule "third_party/PDF-Writer"]
+	path = third_party/PDF-Writer
+	url = https://github.com/galkahana/PDF-Writer.git

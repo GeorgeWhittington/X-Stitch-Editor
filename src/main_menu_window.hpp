@@ -11,6 +11,7 @@ public:
     void update_tool_toggle_icon();
     void update_minimap_toggle_icon();
     void close_all_submenus();
+    void close_all_menus();
 
     nanogui::PopupButton *_menu_button;
     nanogui::PopupButton *_file_button;

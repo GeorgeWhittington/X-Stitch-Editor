@@ -100,6 +100,9 @@ Project::Project(const char *project_path, std::map<std::string, std::map<std::s
     height = retrieve_int_attribute(properties, "chartheight");
     // TODO: consider also retrieving author + copyright attrs?
 
+    if (std::all_of(title.begin(), title.end(), isspace))
+        title = "Untitled";
+
     // Allocate arrays
     thread_data = std::vector<std::vector<int>> (width, std::vector<int> (height, -1));
     texture_data_array = std::make_shared<uint8_t[]>(width * height * 4);
@@ -359,7 +362,6 @@ deleted: // continue to check next backstitch
     }
 
     // Delete all intersecting backstitches
-    std::vector<int>::reverse_iterator rit;
     for (auto rit = to_delete.rbegin(); rit != to_delete.rend(); rit++) {
         backstitches.erase(backstitches.begin() + *rit);
     }

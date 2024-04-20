@@ -14,6 +14,7 @@ include_directories(${NANOGUI_EXTRA_INCS})
 add_subdirectory(third_party/tinyxml2)
 add_subdirectory(third_party/fmt)
 add_subdirectory(third_party/glm)
+add_subdirectory(third_party/PDF-Writer)
 
 file(GLOB_RECURSE SOURCES src/*.cpp)
 
@@ -39,3 +40,4 @@ target_link_libraries(${PROJECT_NAME} PRIVATE nanogui ${NANOGUI_EXTRA_LIBS})
 target_link_libraries(${PROJECT_NAME} PRIVATE tinyxml2)
 target_link_libraries(${PROJECT_NAME} PRIVATE fmt)
 target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm-header-only)
+target_link_libraries(${PROJECT_NAME} PRIVATE PDFWriter)

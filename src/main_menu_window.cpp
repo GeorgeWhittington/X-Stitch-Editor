@@ -1,10 +1,13 @@
+#include <vector>
+#include <iostream>
+
+#include <GLFW/glfw3.h>
+
 #include "main_menu_window.hpp"
 #include "x_stitch_editor.hpp"
 #include "tool_window.hpp"
-#include <GLFW/glfw3.h>
-#include <vector>
-#include <iostream>
 #include "project.hpp"
+#include "pdf_creation.hpp"
 
 using nanogui::Vector2i;
 
@@ -90,13 +93,20 @@ void MainMenuWindow::close_all_submenus() {
     _view_button->set_pushed(false);
 }
 
+void MainMenuWindow::close_all_menus() {
+    close_all_submenus();
+    _menu_button->set_pushed(false);
+}
+
 void MainMenuWindow::new_project() {
     auto dlg = new nanogui::MessageDialog(_app, nanogui::MessageDialog::Type::Question, "", "Do you want to save your current project first?", "Yes", "No", true);
     dlg->set_callback([this](int result) {
         if (!result) {
             bool saved = save();
-            if (!saved)
+            if (!saved) {
+                close_all_menus();
                 return;
+            }
         }
 
         _app->switch_project(nullptr);
@@ -113,8 +123,10 @@ void MainMenuWindow::open_project() {
     dlg->set_callback([this](int result) {
         if (!result) {
             bool saved = save();
-            if (!saved)
+            if (!saved) {
+                close_all_menus();
                 return;
+            }
         }
 
         _app->open_project();
@@ -126,8 +138,10 @@ void MainMenuWindow::close_project() {
     dlg->set_callback([this](int result) {
         if (!result) {
             bool saved = save();
-            if (!saved)
+            if (!saved) {
+                close_all_menus();
                 return;
+            }
         }
 
         _app->switch_project(nullptr);
@@ -141,6 +155,7 @@ bool MainMenuWindow::save() {
         return saved;
     } else {
         _app->_project->save(_app->_project->file_path.c_str(), _app);
+        close_all_menus();
         return true;
     }
 }
@@ -149,13 +164,25 @@ bool MainMenuWindow::save_as() {
     std::string path = nanogui::file_dialog(permitted_files, true);
     if (path != "") {
         _app->_project->save(path.c_str(), _app);
+        close_all_menus();
         return true;
     }
     return false;
 }
 
 void MainMenuWindow::export_to_pdf() {
-    // TODO
+    // TODO: show pdf creation wizard with settings
+
+    // Pass in settings from wizard here
+    PDFWizard pdf_wizard(_app->_project);
+
+    // Show save dialog, then create and save pdf if a path is returned
+    std::vector<std::pair<std::string, std::string>> permitted_pdf_files = {{"pdf", "Portable Document Format"}, {"PDF", "Portable Document Format"}};
+    std::string path = nanogui::file_dialog(permitted_pdf_files, true);
+    if (path != "")
+        pdf_wizard.create_and_save_pdf(path);
+
+    close_all_menus();
 }
 
 void MainMenuWindow::update_tool_toggle_icon() {
