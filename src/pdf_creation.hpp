@@ -14,6 +14,9 @@ struct TableRow {
     int no_stitches;
 };
 
+void set_minor_grid_options(PageContentContext *page_content_ctx);
+void draw_line(PageContentContext *ctx, float x1, float y1, float x2, float y2);
+
 class PDFWizard {
 public:
     PDFWizard(Project *project);
@@ -25,6 +28,8 @@ private:
     void create_chart_pages();
     void create_chart_page(int page_x, int page_y);
     void save_page(PDFPage *page, PageContentContext *page_content_ctx);
+    void draw_grid(PageContentContext *ctx, int x_start, int x_end, int y_start, int y_end,
+                   float chart_x, float chart_x_end, float chart_y, float chart_y_end, float stitch_width);
 
     void fetch_symbol_data();
 
@@ -37,4 +42,5 @@ private:
     AbstractContentContext::TextOptions *_title_text_options;
     AbstractContentContext::TextOptions *_body_text_options;
     AbstractContentContext::TextOptions *_body_bold_text_options;
+    AbstractContentContext::TextOptions *_grid_text_options;
 };

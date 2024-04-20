@@ -41,9 +41,11 @@ void PDFWizard::create_and_save_pdf(std::string path) {
     auto title_text_options = AbstractContentContext::TextOptions(_helvetica, 24, AbstractContentContext::eGray, 0);
     auto body_text_options = AbstractContentContext::TextOptions(_helvetica, 14, AbstractContentContext::eGray, 0);
     auto body_bold_text_options = AbstractContentContext::TextOptions(_helvetica_bold, 14, AbstractContentContext::eGray, 0);
+    auto grid_text_options = AbstractContentContext::TextOptions(_helvetica, 10, AbstractContentContext::eGray, 0);
     _title_text_options = &title_text_options;
     _body_text_options = &body_text_options;
     _body_bold_text_options = &body_bold_text_options;
+    _grid_text_options = &grid_text_options;
 
     fetch_symbol_data();
 
@@ -226,12 +228,130 @@ const float CHART_STITCH_WIDTH = 10.f;
 const int CHART_STITCHES_X = CHART_WIDTH / CHART_STITCH_WIDTH;
 const int CHART_STITCHES_Y = CHART_HEIGHT / CHART_STITCH_WIDTH;
 
+void set_minor_grid_options(PageContentContext *page_content_ctx) {
+    page_content_ctx->J(FT_Stroker_LineCap_::FT_STROKER_LINECAP_SQUARE); // set end cap
+    page_content_ctx->w(0.35f); // line width
+    page_content_ctx->RG(0.6f, 0.6f, 0.6f); // set stroke colour
+}
+
+void draw_line(PageContentContext *ctx, float x1, float y1, float x2, float y2) {
+    ctx->m(x1, y1); // move
+    ctx->l(x2, y2); // draw line to
+    ctx->S(); // stroke
+}
+
+void PDFWizard::draw_grid(PageContentContext *ctx, int x_start, int x_end, int y_start, int y_end,
+                          float chart_x, float chart_x_end, float chart_y, float chart_y_end, float stitch_width) {
+    AbstractContentContext::ImageOptions image_options;
+    image_options.transformationMethod = AbstractContentContext::eFit;
+    image_options.boundingBoxWidth = stitch_width - 3.f;
+    image_options.boundingBoxHeight = stitch_width - 3.f;
+    set_minor_grid_options(ctx);
+    for (int x = x_start; x < x_end; x++) {
+        int rel_x = x_start != 0 ? x - x_start : x;
+        float pos_x = chart_x + (rel_x * stitch_width);
+
+        // Draw minor vertical grid lines
+        if (x > x_start)
+            draw_line(ctx, pos_x, chart_y, pos_x, chart_y_end);
+
+        for (int y = y_start; y < y_end; y++) {
+            int rel_y = y_start != 0 ? y - y_start : y;
+            float pos_y = chart_y + (rel_y * stitch_width);
+
+            // Draw minor horizontal grid lines
+            if (x == x_start && y > y_start)
+                draw_line(ctx, chart_x, pos_y, chart_x_end, pos_y);
+
+            int palette_index = _project->thread_data[x][y];
+            if (palette_index == -1)
+                continue;
+            // TODO: if drawing colour bg draw symbol in black or white depending on:
+            // if (red*0.299 + green*0.587 + blue*0.114) > 186 use #000000 else use #ffffff
+            // probably work this out in the preprocessing step!
+            ctx->DrawImage(pos_x + 1.5f, pos_y + 1.5f, _project_symbols[palette_index], image_options);
+        }
+    }
+
+    // Draw major gridlines and line no's
+    ctx->w(1.f); // line width
+    ctx->RG(0.f, 0.f, 0.f); // set stroke colour
+    for (int x = x_start; x <= x_end; x++) {
+        if (x % 10 != 0)
+            continue;
+
+        int rel_x = x_start != 0 ? x - x_start : x;
+        float pos_x = chart_x + (rel_x * stitch_width);
+        draw_line(ctx, pos_x, chart_y, pos_x, chart_y_end);
+
+        // Write line no
+        std::string x_str = std::to_string(x);
+        float start = pos_x - 20.f;
+        auto x_text_dimensions = _helvetica->CalculateTextDimensions(x_str, 10);
+        float offset = (40.f - x_text_dimensions.width) / 2.f;
+        ctx->WriteText(start + offset, chart_y_end + 5.f, x_str, *_grid_text_options);
+
+        for (int y = y_start; y <= y_end; y++) {
+            int y_inverted = _project->height - y;
+            if (y_inverted % 10 != 0 || y_inverted == 0)
+                continue;
+
+            int rel_y = y_start != 0 ? y - y_start : y;
+            float pos_y = chart_y + (rel_y * stitch_width);
+            draw_line(ctx, chart_x, pos_y, chart_x_end, pos_y);
+
+            // Write line no
+            std::string y_str = std::to_string(y_inverted);
+            float start = pos_y - 20.f;
+            auto y_text_dimensions = _helvetica->CalculateTextDimensions(y_str, 10);
+            float offset = (40.f - y_text_dimensions.height) / 2.f;
+            ctx->WriteText(chart_x - y_text_dimensions.width - 5.f, start + offset, y_str, *_grid_text_options);
+        }
+    }
+
+    ctx->w(1.5f); // line width
+    ctx->RG(0.f, 0.f, 0.f); // set stroke colour
+    ctx->re(chart_x, chart_y, (x_end - x_start) * stitch_width, (y_end - y_start) * stitch_width); // draw rectangle
+    ctx->S(); // stroke
+}
+
 void PDFWizard::create_chart_pages() {
     int no_pages_wide = std::ceil((float)_project->width / (float)CHART_STITCHES_X);
     int no_pages_tall = std::ceil((float)_project->height / (float)CHART_STITCHES_Y);
 
     if (no_pages_wide == 1 && no_pages_tall == 1) {
         // special case, scale to fit max width/height (similar to preview)
+        PDFPage *page = new PDFPage();
+        page->SetMediaBox(PDFRectangle(0, 0, A4_WIDTH, A4_HEIGHT));
+        PageContentContext *page_content_ctx = _pdf_writer.StartPageContentContext(page);
+
+        float chart_width = CHART_WIDTH;
+        float chart_height = CHART_HEIGHT;
+        float chart_x = CHART_X;
+        float chart_y = CHART_Y;
+        float stitch_width;
+
+        // Scale by different axis depending on which aspect ratio is larger
+        if ((chart_height / chart_width) >= ((float)_project->height / (float)_project->width)) {
+            stitch_width = chart_width / _project->width;
+            float new_page_height = stitch_width * _project->height;
+            float vertical_margin = (chart_height - new_page_height) / 2;
+            chart_height = new_page_height;
+            chart_y += vertical_margin;
+        } else {
+            stitch_width = chart_height / _project->height;
+            float new_page_width = stitch_width * _project->width;
+            float horizontal_margin = (chart_width - new_page_width) / 2;
+            chart_width = new_page_width;
+            chart_x += horizontal_margin;
+        }
+
+        float chart_x_end = chart_x + (_project->width * stitch_width);
+        float chart_y_end = chart_y + (_project->height * stitch_width);
+
+        draw_grid(page_content_ctx, 0, _project->width, 0, _project->height,
+                  chart_x, chart_x_end, chart_y, chart_y_end, stitch_width);
+        save_page(page, page_content_ctx);
     } else {
         // tile pages
         for (int y = 0; y < no_pages_tall; y++) {
@@ -243,19 +363,7 @@ void PDFWizard::create_chart_pages() {
     }
 }
 
-void set_gridline_parameters(PageContentContext *page_content_ctx, int line_no) {
-    if (line_no % 10 == 0) {
-        page_content_ctx->w(1.5f); // line width
-        page_content_ctx->RG(0.f, 0.f, 0.f); // set stroke colour
-    } else {
-        page_content_ctx->RG(0.3f, 0.3f, 0.3f); // set stroke colour
-        if (line_no % 5 == 0) {
-            page_content_ctx->w(1.f); // line width
-        } else {
-            page_content_ctx->w(0.5f); // line width
-        }
-    }
-}
+
 
 void PDFWizard::create_chart_page(int page_x, int page_y) {
     PDFPage *page = new PDFPage();
@@ -283,56 +391,8 @@ void PDFWizard::create_chart_page(int page_x, int page_y) {
     float chart_x_end = chart_x + ((x_end - x_start) * CHART_STITCH_WIDTH);
     float chart_y_end = chart_y + (section_height * CHART_STITCH_WIDTH);
 
-    AbstractContentContext::ImageOptions image_options;
-    image_options.transformationMethod = AbstractContentContext::eFit;
-    image_options.boundingBoxWidth = CHART_STITCH_WIDTH - 2.f;
-    image_options.boundingBoxHeight = CHART_STITCH_WIDTH - 2.f;
-    page_content_ctx->J(FT_Stroker_LineCap_::FT_STROKER_LINECAP_SQUARE); // set end cap
-
-    for (int x = x_start; x < x_end; x++) {
-        int rel_x = x - x_start;
-        float pos_x = chart_x + (rel_x * CHART_STITCH_WIDTH);
-
-        if (x > x_start) {
-            // Draw vertical grid lines
-            set_gridline_parameters(page_content_ctx, x);
-            page_content_ctx->m(pos_x, chart_y); // move
-            page_content_ctx->l(pos_x, chart_y_end); // draw line to
-            page_content_ctx->S(); // stroke
-
-            if (x % 10 == 0) {
-                // Draw line no
-            }
-        }
-
-        for (int y = y_start; y < y_end; y++) {
-            int rel_y = y - y_start;
-            float pos_y = chart_y + (rel_y * CHART_STITCH_WIDTH);
-
-            // Draw horizontal grid lines
-            if (x == x_start && y > y_start) {
-                set_gridline_parameters(page_content_ctx, x);
-                page_content_ctx->m(chart_x, pos_y); // move
-                page_content_ctx->l(chart_x_end, pos_y); // draw line to
-                page_content_ctx->S(); // stroke
-
-                if (y % 10 == 0) {
-                    // Draw line no
-                }
-            }
-
-            // TODO: if drawing colour bg draw symbol in black or white depending on:
-            // if (red*0.299 + green*0.587 + blue*0.114) > 186 use #000000 else use #ffffff
-            // probably work this out in the preprocessing step!
-            page_content_ctx->DrawImage(pos_x + 1.f, pos_y + 1.f, _project_symbols[_project->thread_data[x][y]], image_options);
-        }
-    }
-
-    page_content_ctx->w(1.5f); // line width
-    page_content_ctx->RG(0.f, 0.f, 0.f); // set stroke colour
-    page_content_ctx->re(chart_x, chart_y, (x_end - x_start) * CHART_STITCH_WIDTH, section_height * CHART_STITCH_WIDTH); // draw rectangle
-    page_content_ctx->S(); // stroke
-
+    draw_grid(page_content_ctx, x_start, x_end, y_start, y_end,
+              chart_x, chart_x_end, chart_y, chart_y_end, CHART_STITCH_WIDTH);
     save_page(page, page_content_ctx);
 }
 
