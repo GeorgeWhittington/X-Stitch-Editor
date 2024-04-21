@@ -319,6 +319,27 @@ bool test_intersection(Vector2f p0, Vector2f p1, Vector2f p2, Vector2f p3) {
     return s >= 0 && s <= 1 && t >= 0 && t <= 1;
 }
 
+// Algorithm from: https://stackoverflow.com/a/1968345
+Vector2f* get_intersection(Vector2f p0, Vector2f p1, Vector2f p2, Vector2f p3) {
+    float s1_x, s1_y, s2_x, s2_y;
+    s1_x = p1[0] - p0[0];
+    s1_y = p1[1] - p0[1];
+    s2_x = p3[0] - p2[0];
+    s2_y = p3[1] - p2[1];
+
+    float s, t;
+    s = (-s1_y * (p0[0] - p2[0]) + s1_x * (p0[1] - p2[1])) / (-s2_x * s1_y + s1_x * s2_y);
+    t = ( s2_x * (p0[1] - p2[1]) - s2_y * (p0[0] - p2[0])) / (-s2_x * s1_y + s1_x * s2_y);
+
+    if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
+        float i_x = p0[0] + (t * s1_x);
+        float i_y = p0[1] + (t * s1_y);
+        return new Vector2f(i_x, i_y);
+    }
+
+    return nullptr;
+}
+
 void Project::erase_backstitches_intersecting(Vector2i stitch) {
     std::vector<int> to_delete;
 

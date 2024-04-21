@@ -12,6 +12,7 @@
 #include "splashscreen_window.hpp"
 #include "new_project_window.hpp"
 #include "main_menu_window.hpp"
+#include "pdf_window.hpp"
 #include "canvas_renderer.hpp"
 #include "camera2d.hpp"
 #include "threads.hpp"
@@ -35,7 +36,7 @@ void ExitToMainMenuWindow::initialise() {
 XStitchEditorApplication::XStitchEditorApplication() : Screen(Vector2i(1024, 748), "X Stitch Editor", true) {
     load_all_threads();
 
-    LargeIconTheme *theme = new LargeIconTheme(nvg_context());
+    CustomTheme *theme = new CustomTheme(nvg_context());
     set_theme(theme);
 
     tool_window = new ToolWindow(this);
@@ -55,6 +56,9 @@ XStitchEditorApplication::XStitchEditorApplication() : Screen(Vector2i(1024, 748
 
     exit_to_main_menu_window = new ExitToMainMenuWindow(this);
     exit_to_main_menu_window->initialise();
+
+    pdf_window = new PDFWindow(this);
+    pdf_window->initialise();
 
     switch_application_state(ApplicationStates::LAUNCH);
 
@@ -102,6 +106,7 @@ void XStitchEditorApplication::switch_application_state(ApplicationStates state)
     if (_previous_state == ApplicationStates::PROJECT_OPEN) {
         main_menu_window->close_all_submenus();
         main_menu_window->_menu_button->set_pushed(false);
+        pdf_window->clear();
     }
 
     if (_previous_state == ApplicationStates::CREATE_PROJECT)
@@ -121,6 +126,7 @@ void XStitchEditorApplication::switch_application_state(ApplicationStates state)
             new_project_window->set_visible(false);
             main_menu_window->set_visible(false);
             exit_to_main_menu_window->set_visible(false);
+            pdf_window->set_visible(false);
             break;
 
         case ApplicationStates::CREATE_PROJECT:
@@ -131,6 +137,7 @@ void XStitchEditorApplication::switch_application_state(ApplicationStates state)
             tool_window->set_visible(false);
             mouse_position_window->set_visible(false);
             main_menu_window->set_visible(false);
+            pdf_window->set_visible(false);
             break;
 
         case ApplicationStates::PROJECT_OPEN:
@@ -143,6 +150,7 @@ void XStitchEditorApplication::switch_application_state(ApplicationStates state)
             new_project_window->set_visible(false);
             splashscreen_window->set_visible(false);
             exit_to_main_menu_window->set_visible(false);
+            pdf_window->set_visible(false);
             break;
 
         case ApplicationStates::CREATE_DITHERED_PROJECT:
@@ -461,6 +469,7 @@ bool XStitchEditorApplication::mouse_motion_event(const Vector2i &p, const Vecto
 bool XStitchEditorApplication::resize_event(const nanogui::Vector2i &size) {
     splashscreen_window->center();
     new_project_window->center();
+    pdf_window->center();
     main_menu_window->position_top_left();
     return true;
 }

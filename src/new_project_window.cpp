@@ -10,7 +10,7 @@ const nanogui::Color CANVAS_DEFAULT_COLOR = nanogui::Color(255, 255, 255, 255);
 void NewProjectWindow::initialise() {
     using namespace nanogui;
 
-    set_layout(new BoxLayout(Orientation::Vertical, Alignment::Middle, 15, 5));
+    set_layout(new BoxLayout(Orientation::Vertical, Alignment::Middle, 15, 15));
 
     _errors = new Label(this, "");
     _errors->set_color(Color(204, 0, 0, 255));

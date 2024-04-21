@@ -4,25 +4,68 @@
 #include <freetype/ftstroke.h>
 #include "pdf_creation.hpp"
 #include "threads.hpp"
+#include <fmt/core.h>
+#include <ctime>
+#include <limits>
+
+using nanogui::Vector2f;
 
 const float A4_WIDTH = 595.f;
 const float A4_HEIGHT = 842.f;
 const float PAGE_MARGIN = 60.f;
 
-const std::string symbol_key_headers[4] = {"Symbol", "Number", "Description", "N.O. Stitches"};
+const float CHART_WIDTH = A4_WIDTH - 95.f; // 500 -> 50 stitches
+const float CHART_HEIGHT = A4_HEIGHT - 102.f; // 740 -> 74 stitches
+const float CHART_X = 47.5f;
+const float CHART_Y = 51.f;
+const float CHART_STITCH_WIDTH = 10.f;
+const int CHART_STITCHES_X = CHART_WIDTH / CHART_STITCH_WIDTH;
+const int CHART_STITCHES_Y = CHART_HEIGHT / CHART_STITCH_WIDTH;
+
+const std::string symbol_key_headers[5] = {"Symbol", "Number", "Description", "Stitches", "Backstitches"};
 
 const std::string symbol_dir = "/Users/george/Documents/uni_year_three/Digital Systems Project/X-Stitch-Editor/assets/symbols/";
-const std::vector<std::string> symbols = {
-    "air.png", "aircraft.png", "arrow-down.png", "arrow-left.png", "arrow-up.png",
-    "arrow-right.png", "arrow-with-circle-down.png", "arrow-with-circle-left.png",
-    "arrow-with-circle-right.png", "arrow-with-circle-up.png", "attachment.png",
-    "beamed-note.png", "bell.png", "book.png", "bug.png", "check.png",
-    "chevron-down.png", "chevron-left.png", "chevron-right.png", "chevron-up.png",
-    "circle-with-cross.png", "circle-with-minus.png", "circle-with-plus.png",
-    "circle.png", "cloud.png", "controller-fast-backward.png", "controller-fast-forward.png"
-}; // TODO: add the rest
+const std::string symbols[84] = {
+    "air", "aircraft", "arrow-down", "arrow-left", "arrow-up",
+    "arrow-right", "arrow-with-circle-down", "arrow-with-circle-left",
+    "arrow-with-circle-right", "arrow-with-circle-up", "attachment",
+    "beamed-note", "bell", "book", "bug", "check",
+    "chevron-down", "chevron-left", "chevron-right", "chevron-up",
+    "circle-with-cross", "circle-with-minus", "circle-with-plus",
+    "circle", "cloud", "controller-fast-backward", "controller-fast-forward",
+    "controller-jump-to-start", "controller-next", "controller-pause",
+    "controller-play", "controller-record", "controller-stop", "credit",
+    "dots-two-horizontal", "dots-two-vertical", "drop", "eraser", "feather",
+    "flag", "flash", "flower", "hand", "heart", "infinity", "key", "lab-flask",
+    "leaf", "lifebuoy", "light-bulb", "lock-open", "lock", "magnet",
+    "magnifying-glass", "mail", "minus", "modern-mic", "moon", "note", "open-book",
+    "palette", "pencil", "phone", "rainbow", "rocket", "select-arrows",
+    "squared-cross", "squared-minus", "squared-plus", "star-outlined",
+    "star", "traffic-cone", "trash", "tree", "triangle-down", "triangle-left",
+    "triangle-right", "triangle-up", "trophy", "vinyl", "voicemail", "wallet",
+    "warning", "water"
+};
 
-PDFWizard::PDFWizard(Project *project) : _project(project) {};
+// TODO: hard limit of 7 dash patterns atm, should come up with more, or
+// make it so that they wrap around and start getting drawn in greyscale (0.75, 0.5, 0.25)
+// so that there's 28 possible options
+const DashPattern dash_patterns[] = {
+    {},
+    {5.0, 5.0},
+    {5.0, 10.0},
+    {10.0, 5.0},
+    {2.0, 3.0},
+    {2.0, 5.0, 4.0, 5.0},
+    {1.0, 5.0, 6.0, 5.0}
+};
+
+void draw_line(PageContentContext *ctx, float x1, float y1, float x2, float y2) {
+    ctx->m(x1, y1); // move
+    ctx->l(x2, y2); // draw line to
+    ctx->S(); // stroke
+}
+
+PDFWizard::PDFWizard(Project *project, PDFSettings *settings) : _project(project), _settings(settings) {};
 
 void PDFWizard::create_and_save_pdf(std::string path) {
     if (_pdf_writer.StartPDF(
@@ -41,17 +84,24 @@ void PDFWizard::create_and_save_pdf(std::string path) {
     auto title_text_options = AbstractContentContext::TextOptions(_helvetica, 24, AbstractContentContext::eGray, 0);
     auto body_text_options = AbstractContentContext::TextOptions(_helvetica, 14, AbstractContentContext::eGray, 0);
     auto body_bold_text_options = AbstractContentContext::TextOptions(_helvetica_bold, 14, AbstractContentContext::eGray, 0);
-    auto grid_text_options = AbstractContentContext::TextOptions(_helvetica, 10, AbstractContentContext::eGray, 0);
+    auto body_small_text_options = AbstractContentContext::TextOptions(_helvetica, 10, AbstractContentContext::eGray, 0);
     _title_text_options = &title_text_options;
     _body_text_options = &body_text_options;
     _body_bold_text_options = &body_bold_text_options;
-    _grid_text_options = &grid_text_options;
+    _body_small_text_options = &body_small_text_options;
 
     fetch_symbol_data();
 
+    int backstitch_multiplier = _settings->render_backstitch_chart ? 2 : 1;
+    _pattern_no_pages_wide = std::ceil((float)_project->width / (float)CHART_STITCHES_X);
+    _pattern_no_pages_tall = std::ceil((float)_project->height / (float)CHART_STITCHES_Y);
+    _total_pages = 2 + ((_pattern_no_pages_wide * _pattern_no_pages_tall) * backstitch_multiplier);
+
     create_title_page();
     create_symbol_key_page();
-    create_chart_pages();
+    create_chart_pages(false);
+    if (_settings->render_backstitch_chart)
+        create_chart_pages(true);
 
     if (_pdf_writer.EndPDF() != eSuccess)
         throw std::runtime_error("Error writing PDF file");
@@ -62,13 +112,14 @@ void PDFWizard::create_title_page() {
     page->SetMediaBox(PDFRectangle(0, 0, A4_WIDTH, A4_HEIGHT));
     PageContentContext *page_content_ctx = _pdf_writer.StartPageContentContext(page);
 
-    page_content_ctx->WriteText(PAGE_MARGIN, A4_HEIGHT - PAGE_MARGIN - 10, _project->title, *_title_text_options);
+    std::string title = _project->title + " by " + _settings->author;
+    page_content_ctx->WriteText(PAGE_MARGIN, A4_HEIGHT - PAGE_MARGIN - 10, title, *_title_text_options);
 
     // Calculate pattern preview scale
     float page_width = A4_WIDTH - (PAGE_MARGIN * 2);
-    float page_height = A4_HEIGHT - (PAGE_MARGIN * 2) - 40;  // subtract 60 more if subtitle section is being rendered
+    float page_height = A4_HEIGHT - (PAGE_MARGIN * 2) - 40;
     float page_x = PAGE_MARGIN;
-    float page_y = PAGE_MARGIN; // add 60 more if subtitle section is rendered
+    float page_y = PAGE_MARGIN;
     float stitch_width;
 
     // Scale by different axis depending on which aspect ratio is larger
@@ -86,7 +137,7 @@ void PDFWizard::create_title_page() {
         page_x += horizontal_margin;
     }
 
-    page_content_ctx->w(1.0); // line width
+    page_content_ctx->w(1.f); // line width
     page_content_ctx->J(FT_Stroker_LineCap_::FT_STROKER_LINECAP_BUTT); // set end cap
 
     int stitch;
@@ -113,15 +164,21 @@ void PDFWizard::create_title_page() {
             page_content_ctx->f(); // fill
 
             // Draw line from tl to tr
-            page_content_ctx->m(x_start, y_end); // move
-            page_content_ctx->l(x_end, y_end); // draw line to
-            page_content_ctx->S(); // stroke
+            draw_line(page_content_ctx, x_start, y_end, x_end, y_end);
 
             // Draw line from tr to br
-            page_content_ctx->m(x_end, y_end); // move
-            page_content_ctx->l(x_end, y_start); // draw line to
-            page_content_ctx->S(); // stroke
+            draw_line(page_content_ctx, x_end, y_end, x_end, y_start);
         }
+    }
+
+    page_content_ctx->w(2.f); // line width
+    page_content_ctx->J(FT_Stroker_LineCap_::FT_STROKER_LINECAP_ROUND); // set end cap
+
+    for (BackStitch bs : _project->backstitches) {
+        c = _project->palette[bs.palette_index]->color();
+        page_content_ctx->RG(c.r(), c.g(), c.b()); // set stroke colour
+        draw_line(page_content_ctx, page_x + (bs.start[0] * stitch_width), page_y + (bs.start[1] * stitch_width),
+                                    page_x + (bs.end[0] * stitch_width), page_y + (bs.end[1] * stitch_width));
     }
 
     // Stroke pattern outline
@@ -131,11 +188,7 @@ void PDFWizard::create_title_page() {
     page_content_ctx->re(page_x, page_y, page_width, page_height); // draw rectangle
     page_content_ctx->S(); // stroke
 
-    // TODO: render subtitle section (if it exists)
-
-    // TODO: draw copyright + page no in footer (write a function that does this to each page)
-
-    save_page(page, page_content_ctx);
+    save_page(page, page_content_ctx, PAGE_MARGIN);
 }
 
 void PDFWizard::create_symbol_key_page() {
@@ -144,8 +197,8 @@ void PDFWizard::create_symbol_key_page() {
     PageContentContext *page_content_ctx = _pdf_writer.StartPageContentContext(page);
 
     // Find longest item per column, to calculate table spacing
-    float longest_in_column[3];
-    for (int i = 0; i < 3; i++) {
+    float longest_in_column[4];
+    for (int i = 0; i < 4; i++) {
         auto text_dimensions = _helvetica_bold->CalculateTextDimensions(symbol_key_headers[i], 14);
         longest_in_column[i] = text_dimensions.width;
     }
@@ -157,6 +210,10 @@ void PDFWizard::create_symbol_key_page() {
         auto desc_text_dimensions = _helvetica->CalculateTextDimensions(row->description, 14);
         if (desc_text_dimensions.width > longest_in_column[2])
             longest_in_column[2] = desc_text_dimensions.width;
+
+        auto no_stitches_text_dimensions = _helvetica->CalculateTextDimensions(std::to_string(row->no_stitches), 14);
+        if (no_stitches_text_dimensions.width > longest_in_column[3])
+            longest_in_column[3] = no_stitches_text_dimensions.width;
     }
 
     page_content_ctx->WriteText(PAGE_MARGIN, A4_HEIGHT - PAGE_MARGIN - 10, "Symbol Key", *_title_text_options);
@@ -165,9 +222,9 @@ void PDFWizard::create_symbol_key_page() {
     float y = A4_HEIGHT - 100;
     float column_spacing = 20.f;
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 5; i++) {
         page_content_ctx->WriteText(x, y, symbol_key_headers[i], *_body_bold_text_options);
-        if (i != 3)
+        if (i != 4)
             x += longest_in_column[i] + column_spacing;
     }
 
@@ -177,9 +234,7 @@ void PDFWizard::create_symbol_key_page() {
     page_content_ctx->w(1.f); // line width
     page_content_ctx->J(FT_Stroker_LineCap_::FT_STROKER_LINECAP_BUTT); // set end cap
     page_content_ctx->RG(0.f, 0.f, 0.f); // set stroke colour
-    page_content_ctx->m(PAGE_MARGIN, y); // move
-    page_content_ctx->l(A4_WIDTH - PAGE_MARGIN, y); // draw line to
-    page_content_ctx->S(); // stroke
+    draw_line(page_content_ctx, PAGE_MARGIN, y, A4_WIDTH - PAGE_MARGIN, y);
 
     x = PAGE_MARGIN;
     y -= 15;
@@ -188,21 +243,42 @@ void PDFWizard::create_symbol_key_page() {
     image_options.transformationMethod = AbstractContentContext::eFit;
     image_options.boundingBoxWidth = 14.f;
     image_options.boundingBoxHeight = 14.f;
-
+    page_content_ctx->J(FT_Stroker_LineCap_::FT_STROKER_LINECAP_ROUND); // set end cap
     nanogui::Color c;
 
     for (TableRow *row : _symbol_key_rows) {
         c = _project->palette[row->palette_id]->color();
-        page_content_ctx->rg(c.r(), c.g(), c.b()); // set fill colour
-        page_content_ctx->re(x, y - 6, 18.f, 18.f); // draw rectangle
-        page_content_ctx->f(); // fill
+        if (row->no_stitches != 0) {
+            page_content_ctx->rg(c.r(), c.g(), c.b()); // set fill colour
+            page_content_ctx->re(x, y - 6, 18, 18); // draw rectangle
+            page_content_ctx->f(); // fill
 
-        page_content_ctx->w(0.5f); // set line width
-        page_content_ctx->RG(0.f, 0.f, 0.f); // set stroke colour
-        page_content_ctx->re(x + 20, y - 6, 18.f, 18.f); // draw rectangle
-        page_content_ctx->S(); // stroke
+            if (_settings->render_in_colour) {
+                page_content_ctx->DrawImage(x + 2, y - 4, _project_symbols[row->palette_id], image_options);
+            } else {
+                page_content_ctx->w(0.5); // set line width
+                page_content_ctx->RG(0, 0, 0); // set stroke colour
+                page_content_ctx->re(x + 20, y - 6, 18, 18); // draw rectangle
+                page_content_ctx->S(); // stroke
 
-        page_content_ctx->DrawImage(x + 22, y - 4, _project_symbols[row->palette_id], image_options);
+                page_content_ctx->DrawImage(x + 22, y - 4, _project_symbols[row->palette_id], image_options);
+            }
+        }
+        if (row->no_backstitches != 0) {
+            page_content_ctx->w(2.f); // set line width
+            if (_settings->render_in_colour) {
+                page_content_ctx->RG(c.r(), c.g(), c.b()); // set stroke colour
+                draw_line(page_content_ctx, x + 22, y - 4, x + 44, y + 10);
+            } else {
+                page_content_ctx->q();
+                DashPattern dash_pattern = _project_dashpatterns[row->palette_id];
+                if (dash_pattern.size() != 0) {
+                    page_content_ctx->d(dash_pattern.data(), dash_pattern.size(), 0);
+                }
+                draw_line(page_content_ctx, x + 42, y - 4, x + 64, y + 10);
+                page_content_ctx->Q();
+            }
+        }
         x += longest_in_column[0] + column_spacing;
 
         page_content_ctx->WriteText(x, y, row->number, *_body_text_options);
@@ -212,41 +288,23 @@ void PDFWizard::create_symbol_key_page() {
         x += longest_in_column[2] + column_spacing;
 
         page_content_ctx->WriteText(x, y, std::to_string(row->no_stitches), *_body_text_options);
+        x += longest_in_column[3] + column_spacing;
+
+        page_content_ctx->WriteText(x, y, std::to_string(row->no_backstitches), *_body_text_options);
 
         x = PAGE_MARGIN;
         y -= 20;
     }
 
-    save_page(page, page_content_ctx);
+    save_page(page, page_content_ctx, PAGE_MARGIN);
 }
 
-const float CHART_WIDTH = A4_WIDTH - 95.f; // 500 -> 50 stitches
-const float CHART_HEIGHT = A4_HEIGHT - 102.f; // 740 -> 74 stitches
-const float CHART_X = 47.5f;
-const float CHART_Y = 51.f;
-const float CHART_STITCH_WIDTH = 10.f;
-const int CHART_STITCHES_X = CHART_WIDTH / CHART_STITCH_WIDTH;
-const int CHART_STITCHES_Y = CHART_HEIGHT / CHART_STITCH_WIDTH;
-
-void set_minor_grid_options(PageContentContext *page_content_ctx) {
-    page_content_ctx->J(FT_Stroker_LineCap_::FT_STROKER_LINECAP_SQUARE); // set end cap
-    page_content_ctx->w(0.35f); // line width
-    page_content_ctx->RG(0.6f, 0.6f, 0.6f); // set stroke colour
-}
-
-void draw_line(PageContentContext *ctx, float x1, float y1, float x2, float y2) {
-    ctx->m(x1, y1); // move
-    ctx->l(x2, y2); // draw line to
-    ctx->S(); // stroke
-}
-
-void PDFWizard::draw_grid(PageContentContext *ctx, int x_start, int x_end, int y_start, int y_end,
-                          float chart_x, float chart_x_end, float chart_y, float chart_y_end, float stitch_width) {
-    AbstractContentContext::ImageOptions image_options;
-    image_options.transformationMethod = AbstractContentContext::eFit;
-    image_options.boundingBoxWidth = stitch_width - 3.f;
-    image_options.boundingBoxHeight = stitch_width - 3.f;
-    set_minor_grid_options(ctx);
+void PDFWizard::draw_gridlines(PageContentContext *ctx, int x_start, int x_end, int y_start, int y_end,
+                               float chart_x, float chart_x_end, float chart_y, float chart_y_end, float stitch_width) {
+    // Draw minor grid lines
+    ctx->J(FT_Stroker_LineCap_::FT_STROKER_LINECAP_SQUARE); // set end cap
+    ctx->w(0.35f); // line width
+    ctx->RG(0.6f, 0.6f, 0.6f); // set stroke colour
     for (int x = x_start; x < x_end; x++) {
         int rel_x = x_start != 0 ? x - x_start : x;
         float pos_x = chart_x + (rel_x * stitch_width);
@@ -262,14 +320,6 @@ void PDFWizard::draw_grid(PageContentContext *ctx, int x_start, int x_end, int y
             // Draw minor horizontal grid lines
             if (x == x_start && y > y_start)
                 draw_line(ctx, chart_x, pos_y, chart_x_end, pos_y);
-
-            int palette_index = _project->thread_data[x][y];
-            if (palette_index == -1)
-                continue;
-            // TODO: if drawing colour bg draw symbol in black or white depending on:
-            // if (red*0.299 + green*0.587 + blue*0.114) > 186 use #000000 else use #ffffff
-            // probably work this out in the preprocessing step!
-            ctx->DrawImage(pos_x + 1.5f, pos_y + 1.5f, _project_symbols[palette_index], image_options);
         }
     }
 
@@ -289,7 +339,7 @@ void PDFWizard::draw_grid(PageContentContext *ctx, int x_start, int x_end, int y
         float start = pos_x - 20.f;
         auto x_text_dimensions = _helvetica->CalculateTextDimensions(x_str, 10);
         float offset = (40.f - x_text_dimensions.width) / 2.f;
-        ctx->WriteText(start + offset, chart_y_end + 5.f, x_str, *_grid_text_options);
+        ctx->WriteText(start + offset, chart_y_end + 5.f, x_str, *_body_small_text_options);
 
         for (int y = y_start; y <= y_end; y++) {
             int y_inverted = _project->height - y;
@@ -305,21 +355,182 @@ void PDFWizard::draw_grid(PageContentContext *ctx, int x_start, int x_end, int y
             float start = pos_y - 20.f;
             auto y_text_dimensions = _helvetica->CalculateTextDimensions(y_str, 10);
             float offset = (40.f - y_text_dimensions.height) / 2.f;
-            ctx->WriteText(chart_x - y_text_dimensions.width - 5.f, start + offset, y_str, *_grid_text_options);
+            ctx->WriteText(chart_x - y_text_dimensions.width - 5.f, start + offset, y_str, *_body_small_text_options);
         }
     }
 
+    // Draw Outline
     ctx->w(1.5f); // line width
     ctx->RG(0.f, 0.f, 0.f); // set stroke colour
     ctx->re(chart_x, chart_y, (x_end - x_start) * stitch_width, (y_end - y_start) * stitch_width); // draw rectangle
     ctx->S(); // stroke
 }
 
-void PDFWizard::create_chart_pages() {
-    int no_pages_wide = std::ceil((float)_project->width / (float)CHART_STITCHES_X);
-    int no_pages_tall = std::ceil((float)_project->height / (float)CHART_STITCHES_Y);
+bool backstitch_inside_chart(BackStitch bs, float x_start, float x_end, float y_start, float y_end) {
+    int inside = 0;
+    for (Vector2f point : {bs.start, bs.end})
+        if (point[0] >= x_start && point[0] <= x_end && point[1] >= y_start && point[1] <= y_end)
+            inside++;
 
-    if (no_pages_wide == 1 && no_pages_tall == 1) {
+    return inside == 2;
+}
+
+bool backstitch_intersects(BackStitch bs, float x_start, float x_end, float y_start, float y_end) {
+    for (Vector2f point : {bs.start, bs.end})
+        if (point[0] >= x_start && point[0] <= x_end && point[1] >= y_start && point[1] <= y_end)
+            return true;
+
+    Vector2f bl = Vector2f(x_start, y_start);
+    Vector2f br = Vector2f(x_end, y_start);
+    Vector2f tl = Vector2f(x_start, y_end);
+    Vector2f tr = Vector2f(x_end, y_end);
+
+    std::pair<Vector2f, Vector2f> edges[4] = {
+        std::pair(tl, tr), // top
+        std::pair(bl, br), // bottom
+        std::pair(bl, tl), // left
+        std::pair(br, tr), // right
+    };
+
+    for (std::pair<Vector2f, Vector2f> edge : edges) {
+        if (test_intersection(bs.start, bs.end, edge.first, edge.second)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void PDFWizard::draw_backstitches(PageContentContext *ctx, int x_start, int x_end, int y_start, int y_end,
+                          float chart_x, float chart_x_end, float chart_y, float chart_y_end, float stitch_width, bool over_symbols) {
+    ctx->w(2.f); // set line width
+    ctx->J(FT_Stroker_LineCap_::FT_STROKER_LINECAP_ROUND); // set end cap
+    if (_settings->render_in_colour) {
+        ctx->RG(1.f, 0.f, 0.f); // set fill colour
+    } else {
+        ctx->RG(0.f, 0.f, 0.f); // set fill colour
+    }
+
+    for (BackStitch bs : _project->backstitches) {
+        if (!backstitch_intersects(bs, x_start, x_end, y_start, y_end))
+            continue;
+
+        float rel_x1 = x_start != 0 ? bs.start[0] - x_start : bs.start[0];
+        float rel_x2 = x_start != 0 ? bs.end[0] - x_start : bs.end[0];
+        float rel_y1 = y_start != 0 ? bs.start[1] - y_start : bs.start[1];
+        float rel_y2 = y_start != 0 ? bs.end[1] - y_start : bs.end[1];
+        float pos_x1 = chart_x + (rel_x1 * stitch_width);
+        float pos_x2 = chart_x + (rel_x2 * stitch_width);
+        float pos_y1 = chart_y + (rel_y1 * stitch_width);
+        float pos_y2 = chart_y + (rel_y2 * stitch_width);
+
+        Vector2f bl(chart_x, chart_y);
+        Vector2f br(chart_x_end, chart_y);
+        Vector2f tl(chart_x, chart_y_end);
+        Vector2f tr(chart_x_end, chart_y_end);
+
+        std::pair<Vector2f, Vector2f> chart_edges[4] = {
+            std::pair(tl, tr), // top
+            std::pair(bl, br), // bottom
+            std::pair(bl, tl), // left
+            std::pair(br, tr)  // right
+        };
+
+        if ((_settings->render_in_colour && !over_symbols) ||
+            (_settings->render_in_colour && over_symbols && !_settings->render_backstitch_chart)) {
+            nanogui::Color c = _project->palette[bs.palette_index]->color();
+            ctx->RG(c.r(), c.g(), c.b()); // set stroke colour
+        }
+
+        if (backstitch_inside_chart(bs, x_start, x_end, y_start, y_end)) {
+            // backstitch fully inside chart, just draw
+            DashPattern dash_pattern = _project_dashpatterns[bs.palette_index];
+            ctx->q();
+            if (dash_pattern.size() != 0 && _settings->render_in_colour == false)
+                ctx->d(dash_pattern.data(), dash_pattern.size(), 0);
+            draw_line(ctx, pos_x1, pos_y1, pos_x2, pos_y2);
+            ctx->Q();
+        } else {
+            // backstitch has some point(s) outside chart, find where it intersects with the edge
+            std::vector<Vector2f> intersections;
+
+            // is one backstitch edge inside the chart?
+            if (bs.start[0] >= x_start && bs.start[0] <= x_end && bs.start[1] >= y_start && bs.start[1] <= y_end) {
+                intersections.push_back(Vector2f(pos_x1, pos_y1));
+            } else if (bs.end[0] >= x_start && bs.end[0] <= x_end && bs.end[1] >= y_start && bs.end[1] <= y_end) {
+                intersections.push_back(Vector2f(pos_x2, pos_y2));
+            }
+
+            for (int i = 0; i < 4; i++) {
+                std::pair<Vector2f, Vector2f> edge = chart_edges[i];
+                Vector2f *intersection = get_intersection(Vector2f(pos_x1, pos_y1), Vector2f(pos_x2, pos_y2), edge.first, edge.second);
+
+                if (intersection != nullptr) {
+                    bool collision = false;
+                    for (Vector2f i : intersections) {
+                        if (i == *intersection) {
+                            collision = true;
+                            break;
+                        }
+                    }
+
+                    if (collision == false)
+                        intersections.push_back(*intersection);
+                    delete intersection;
+                }
+            }
+
+            if (intersections.size() == 2) {
+                DashPattern dash_pattern = _project_dashpatterns[bs.palette_index];
+                ctx->q();
+                if (dash_pattern.size() != 0 && _settings->render_in_colour == false)
+                    ctx->d(dash_pattern.data(), dash_pattern.size(), 0);
+                draw_line(ctx, intersections[0][0], intersections[0][1], intersections[1][0], intersections[1][1]);
+                ctx->Q();
+            }
+        }
+    }
+}
+
+void PDFWizard::draw_chart(PageContentContext *ctx, int x_start, int x_end, int y_start, int y_end,
+                          float chart_x, float chart_x_end, float chart_y, float chart_y_end, float stitch_width, bool backstitch_only) {
+    if (!backstitch_only) {
+        // Draw symbols and optionally colour
+        AbstractContentContext::ImageOptions image_options;
+        image_options.transformationMethod = AbstractContentContext::eFit;
+        image_options.boundingBoxWidth = stitch_width - 3.f;
+        image_options.boundingBoxHeight = stitch_width - 3.f;
+        for (int x = x_start; x < x_end; x++) {
+            int rel_x = x_start != 0 ? x - x_start : x;
+            float pos_x = chart_x + (rel_x * stitch_width);
+
+            for (int y = y_start; y < y_end; y++) {
+                int rel_y = y_start != 0 ? y - y_start : y;
+                float pos_y = chart_y + (rel_y * stitch_width);
+
+                int palette_index = _project->thread_data[x][y];
+                if (palette_index == -1)
+                    continue;
+
+                if (_settings->render_in_colour) {
+                    nanogui::Color c = _project->palette[palette_index]->color();
+                    ctx->rg(c.r(), c.g(), c.b()); // set fill colour
+                    ctx->re(pos_x, pos_y, stitch_width, stitch_width); // draw rectangle
+                    ctx->f(); // fill
+                }
+
+                ctx->DrawImage(pos_x + 1.5f, pos_y + 1.5f, _project_symbols[palette_index], image_options);
+            }
+        }
+    }
+
+    draw_gridlines(ctx, x_start, x_end, y_start, y_end, chart_x, chart_x_end, chart_y, chart_y_end, stitch_width);
+    if (_project->backstitches.size() != 0)
+        draw_backstitches(ctx, x_start, x_end, y_start, y_end, chart_x, chart_x_end, chart_y, chart_y_end, stitch_width, !backstitch_only);
+}
+
+void PDFWizard::create_chart_pages(bool backstitch_only) {
+    if (_pattern_no_pages_wide == 1 && _pattern_no_pages_tall == 1) {
         // special case, scale to fit max width/height (similar to preview)
         PDFPage *page = new PDFPage();
         page->SetMediaBox(PDFRectangle(0, 0, A4_WIDTH, A4_HEIGHT));
@@ -349,34 +560,29 @@ void PDFWizard::create_chart_pages() {
         float chart_x_end = chart_x + (_project->width * stitch_width);
         float chart_y_end = chart_y + (_project->height * stitch_width);
 
-        draw_grid(page_content_ctx, 0, _project->width, 0, _project->height,
-                  chart_x, chart_x_end, chart_y, chart_y_end, stitch_width);
-        save_page(page, page_content_ctx);
+        draw_chart(page_content_ctx, 0, _project->width, 0, _project->height,
+                  chart_x, chart_x_end, chart_y, chart_y_end, stitch_width, backstitch_only);
+        save_page(page, page_content_ctx, chart_x);
     } else {
         // tile pages
-        for (int y = 0; y < no_pages_tall; y++) {
-            for (int x = 0; x < no_pages_wide; x++) {
-                create_chart_page(x, y);
+        for (int y = 0; y < _pattern_no_pages_tall; y++) {
+            for (int x = 0; x < _pattern_no_pages_wide; x++) {
+                create_chart_page(x, y, backstitch_only);
             }
         }
-
     }
 }
 
-
-
-void PDFWizard::create_chart_page(int page_x, int page_y) {
+void PDFWizard::create_chart_page(int page_x, int page_y, bool backstitch_only) {
     PDFPage *page = new PDFPage();
     page->SetMediaBox(PDFRectangle(0, 0, A4_WIDTH, A4_HEIGHT));
     PageContentContext *page_content_ctx = _pdf_writer.StartPageContentContext(page);
 
     float chart_x = CHART_X;
     float chart_y = CHART_Y;
-
     int x_start = page_x * CHART_STITCHES_X;
     int y_start = std::max(_project->height - ((page_y + 1) * CHART_STITCHES_Y), 0);
-
-    int x_end = std::min(x_start + CHART_STITCHES_X, _project->width - 1);
+    int x_end = std::min(x_start + CHART_STITCHES_X, _project->width);
     int y_end = y_start + CHART_STITCHES_Y;
 
     // If the end point we calculate is greater than to the start point of the previous page, it's wrong
@@ -391,12 +597,21 @@ void PDFWizard::create_chart_page(int page_x, int page_y) {
     float chart_x_end = chart_x + ((x_end - x_start) * CHART_STITCH_WIDTH);
     float chart_y_end = chart_y + (section_height * CHART_STITCH_WIDTH);
 
-    draw_grid(page_content_ctx, x_start, x_end, y_start, y_end,
-              chart_x, chart_x_end, chart_y, chart_y_end, CHART_STITCH_WIDTH);
-    save_page(page, page_content_ctx);
+    draw_chart(page_content_ctx, x_start, x_end, y_start, y_end,
+              chart_x, chart_x_end, chart_y, chart_y_end, CHART_STITCH_WIDTH, backstitch_only);
+    save_page(page, page_content_ctx, chart_x);
 }
 
-void PDFWizard::save_page(PDFPage *page, PageContentContext *page_content_ctx) {
+void PDFWizard::save_page(PDFPage *page, PageContentContext *page_content_ctx, float margin_x) {
+    std::time_t t = std::time(nullptr);
+    std::tm *const pTInfo = std::localtime(&t);
+    page_content_ctx->WriteText(margin_x, 40, fmt::format("© {} {}", _settings->author, 1900 + pTInfo->tm_year), *_body_small_text_options);
+
+    std::string page_no = fmt::format("{}/{}", _current_page, _total_pages);
+    auto text_dimensions = _helvetica->CalculateTextDimensions(page_no, 10);
+    page_content_ctx->WriteText(A4_WIDTH - margin_x - text_dimensions.width, 40, page_no, *_body_small_text_options);
+    _current_page++;
+
     if (_pdf_writer.EndPageContentContext(page_content_ctx) != eSuccess)
         throw std::runtime_error("Error ending page");
 
@@ -407,7 +622,7 @@ void PDFWizard::save_page(PDFPage *page, PageContentContext *page_content_ctx) {
 void PDFWizard::fetch_symbol_data() {
     for (int i = 0; i < _project->palette.size(); i ++) {
         Thread *t = _project->palette[i];
-        _symbol_key_rows.push_back(new TableRow{i, t->company + " " + t->number, t->description, 0});
+        _symbol_key_rows.push_back(new TableRow{i, t->company + " " + t->number, t->description});
     }
 
     // Find stitch count for each colour
@@ -421,10 +636,15 @@ void PDFWizard::fetch_symbol_data() {
         }
     }
 
+    // Find backstitch count for each colour
+    for (BackStitch bs : _project->backstitches) {
+        _symbol_key_rows[bs.palette_index]->no_backstitches++;
+    }
+
     // Remove palette items with no stitches
     std::vector<int> to_delete;
     for (int i = 0; i < _symbol_key_rows.size(); i++) {
-        if (_symbol_key_rows[i]->no_stitches == 0)
+        if (_symbol_key_rows[i]->no_stitches == 0 && _symbol_key_rows[i]->no_backstitches == 0)
             to_delete.push_back(i);
     }
     for (auto rit = to_delete.rbegin(); rit != to_delete.rend(); rit++)
@@ -433,7 +653,28 @@ void PDFWizard::fetch_symbol_data() {
     // Load all symbols
     int i = 0;
     for (TableRow *row : _symbol_key_rows) {
-        _project_symbols[row->palette_id] = symbol_dir + symbols[i];
-        i++;
+        if (row->no_stitches != 0) {
+            std::string tint = ".png";
+
+            if (_settings->render_in_colour) {
+                Thread *t = _project->palette[row->palette_id];
+                if (((t->R * 0.299f) + (t->G * 0.587f) + (t->B * 0.114f)) <= 186.f)
+                    tint = "-white.png";
+            }
+
+            _project_symbols[row->palette_id] = symbol_dir + symbols[i] + tint;
+            i++;
+        }
+    }
+
+    if (_settings->render_in_colour || _project->backstitches.size() == 0)
+        return;
+
+    i = 0;
+    for (TableRow *row : _symbol_key_rows) {
+        if (row->no_backstitches != 0 && _settings->render_in_colour == false) {
+            _project_dashpatterns[row->palette_id] = dash_patterns[i];
+            i++;
+        }
     }
 }

@@ -17,6 +17,9 @@ int color_float_to_int(float color);
 
 int index_3d(nanogui::Vector2i stitch, int width);
 
+bool test_intersection(nanogui::Vector2f p0, nanogui::Vector2f p1, nanogui::Vector2f p2, nanogui::Vector2f p3);
+nanogui::Vector2f* get_intersection(nanogui::Vector2f p0, nanogui::Vector2f p1, nanogui::Vector2f p2, nanogui::Vector2f p3);
+
 struct Thread;
 class XStitchEditorApplication;
 

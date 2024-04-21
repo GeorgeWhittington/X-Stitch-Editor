@@ -6,8 +6,8 @@
 #include "main_menu_window.hpp"
 #include "x_stitch_editor.hpp"
 #include "tool_window.hpp"
+#include "pdf_window.hpp"
 #include "project.hpp"
-#include "pdf_creation.hpp"
 
 using nanogui::Vector2i;
 
@@ -171,18 +171,7 @@ bool MainMenuWindow::save_as() {
 }
 
 void MainMenuWindow::export_to_pdf() {
-    // TODO: show pdf creation wizard with settings
-
-    // Pass in settings from wizard here
-    PDFWizard pdf_wizard(_app->_project);
-
-    // Show save dialog, then create and save pdf if a path is returned
-    std::vector<std::pair<std::string, std::string>> permitted_pdf_files = {{"pdf", "Portable Document Format"}, {"PDF", "Portable Document Format"}};
-    std::string path = nanogui::file_dialog(permitted_pdf_files, true);
-    if (path != "")
-        pdf_wizard.create_and_save_pdf(path);
-
-    close_all_menus();
+    _app->pdf_window->set_visible(true);
 }
 
 void MainMenuWindow::update_tool_toggle_icon() {

@@ -9,10 +9,14 @@
 
 // state machine with enums for flow through app states (splashscreen, create project, project is open etc)
 
-class LargeIconTheme : public nanogui::Theme {
+class CustomTheme : public nanogui::Theme {
 public:
-    LargeIconTheme(NVGcontext *ctx) : nanogui::Theme(ctx) {
+    CustomTheme(NVGcontext *ctx) : nanogui::Theme(ctx) {
         m_icon_scale = 0.9;
+        m_window_fill_focused = nanogui::Color(45, 255);
+        m_window_fill_unfocused = nanogui::Color(43, 255);
+        m_window_title_focused = nanogui::Color(255, 255);
+        m_window_title_unfocused = nanogui::Color(220, 255);
     }
 };
 
@@ -21,6 +25,7 @@ class MousePositionWindow;
 class SplashScreenWindow;
 class NewProjectWindow;
 class MainMenuWindow;
+class PDFWindow;
 class CanvasRenderer;
 struct Project;
 class XStitchEditorApplication;
@@ -57,6 +62,7 @@ public:
     NewProjectWindow *new_project_window;
     MainMenuWindow *main_menu_window;
     ExitToMainMenuWindow *exit_to_main_menu_window;
+    PDFWindow *pdf_window;
 
     CanvasRenderer *_canvas_renderer;
     Project *_project;
