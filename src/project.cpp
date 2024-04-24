@@ -82,6 +82,10 @@ Project::Project(std::string title_, int width_, int height_, nanogui::Color bg_
 
     thread_data = std::vector<std::vector<int>> (width, std::vector<int> (height, -1));
     texture_data_array = std::make_shared<uint8_t[]>(width * height * 4);
+
+    for (int i = 0; i < width * height * 4; i++) {
+        texture_data_array[i] = 255;
+    }
 }
 
 Project::Project(const char *project_path, std::map<std::string, std::map<std::string, Thread*>*> *threads) {
@@ -106,6 +110,10 @@ Project::Project(const char *project_path, std::map<std::string, std::map<std::s
     // Allocate arrays
     thread_data = std::vector<std::vector<int>> (width, std::vector<int> (height, -1));
     texture_data_array = std::make_shared<uint8_t[]>(width * height * 4);
+
+    for (int i = 0; i < width * height * 4; i++) {
+        texture_data_array[i] = 255;
+    }
 
     int palette_length = retrieve_int_attribute(properties, "palettecount");
 
@@ -230,10 +238,10 @@ void Project::erase_stitch(Vector2i stitch) {
     thread_data[stitch[0]][stitch[1]] = -1;
 
     int index = index_3d(stitch, width);
-    texture_data_array[index] = 0;
-    texture_data_array[index+1] = 0;
-    texture_data_array[index+2] = 0;
-    texture_data_array[index+3] = 0;
+    texture_data_array[index] = 255;
+    texture_data_array[index+1] = 255;
+    texture_data_array[index+2] = 255;
+    texture_data_array[index+3] = 255;
 }
 
 void Project::fill_from_stitch(Vector2i stitch, Thread *thread) {
@@ -472,6 +480,9 @@ void Project::collate_backstitches() {
 
 Thread* Project::find_thread_at_stitch(Vector2i stitch) {
     int palette_id = thread_data[stitch[0]][stitch[1]];
+    if (palette_id == -1)
+        return nullptr;
+
     try {
         Thread *t = palette.at(palette_id);
         return t;
