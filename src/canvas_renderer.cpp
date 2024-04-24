@@ -174,6 +174,8 @@ CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) :
     } else {
         _major_grid_shader.release();
     }
+
+    update_backstitch_buffers();
 };
 
 const u_int32_t circle_vert_layout[50 * 3] = {

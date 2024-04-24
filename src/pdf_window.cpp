@@ -45,13 +45,22 @@ void PDFWindow::initialise() {
     _author_textbox->set_editable(true);
     _author_textbox->set_alignment(TextBox::Alignment::Left);
     _author_textbox->set_fixed_width(200);
-    // _author_textbox->set_
 
     new Label(form_widget, "Generate Separate Backstitch Chart:");
     _checkbox_backstitch = new CheckBox(form_widget, "");
 
-    Button *create_pdf_button = new Button(this, "Create PDF");
-    create_pdf_button->set_callback([this](){ save_pdf(); });
+    Widget *button_widget = new Widget(this);
+    button_widget->set_layout(new BoxLayout(Orientation::Horizontal, Alignment::Minimum, 0, 5));
+
+    Button *button = new Button(button_widget, "Create PDF");
+    button->set_callback([this](){ save_pdf(); });
+
+    button = new Button(button_widget, "Cancel");
+    button->set_callback([this](){
+        clear();
+        set_visible(false);
+        _app->main_menu_window->close_all_menus();
+    });
 
     center();
 }

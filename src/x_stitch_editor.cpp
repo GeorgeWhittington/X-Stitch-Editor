@@ -97,15 +97,13 @@ void XStitchEditorApplication::switch_project(Project *project) {
     if (project != nullptr) {
         _project = project;
         _canvas_renderer = new CanvasRenderer(this);
-        _canvas_renderer->update_backstitch_buffers();
         tool_window->set_palette();
     }
 }
 
 void XStitchEditorApplication::switch_application_state(ApplicationStates state) {
     if (_previous_state == ApplicationStates::PROJECT_OPEN) {
-        main_menu_window->close_all_submenus();
-        main_menu_window->_menu_button->set_pushed(false);
+        main_menu_window->close_all_menus();
         pdf_window->clear();
     }
 

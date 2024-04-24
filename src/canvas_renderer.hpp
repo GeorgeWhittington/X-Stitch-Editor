@@ -77,7 +77,7 @@ const std::string BACK_STITCH_FRAG = R"(
     }
 )";
 
-const std::string GRID_VERT = R"(
+const std::string MINOR_GRID_VERT = R"(
     #version 330 core
     layout (location = 0) in vec2 position;
 
@@ -87,7 +87,42 @@ const std::string GRID_VERT = R"(
         gl_Position = mvp * vec4(position, 0.0, 1.0);
     }
 )";
-const std::string GRID_FRAG = R"(
+const std::string MINOR_GRID_FRAG = R"(
+    #version 330 core
+    out vec4 FragColor;
+
+    uniform vec4 colour;
+
+    void main() {
+        FragColor = colour;
+    }
+)";
+
+const std::string MAJOR_GRID_VERT = R"(
+    #version 330 core
+    layout (location = 0) in vec2 position;
+    layout (location = 1) in uint8_t corner;
+
+    uniform mat4 mvp;
+    uniform float normal;
+
+    void main() {
+        vec4 pos = mvp * vec4(position, 0.0, 1.0);
+
+        if (corner == 0 || corner == 1) {
+            pos = vec4(pos.x - normal, pos.yzw);
+        } else if (corner == 2 || corner == 3) {
+            pos = vec4(pos.x + normal, pos.yzw);
+        } else if (corner == 4 || corner == 5) {
+            pos = vec4(pos.x, pos.y - normal, pos.zw);
+        } else if (corner == 6 || corner == 7) {
+            pos = vec4(pos.x, pos.y + normal, pos.zw);
+        }
+
+        gl_Position = pos;
+    }
+)";
+const std::string MAJOR_GRID_FRAG = R"(
     #version 330 core
     out vec4 FragColor;
 
@@ -129,7 +164,6 @@ const std::string BACK_STITCH_VERT = R"(
     attribute vec2 position;
     attribute vec4 colour;
 
-    out vec4 frag_colour;
     varying vec4 frag_colour;
 
     uniform mat4 mvp;
@@ -148,7 +182,7 @@ const std::string BACK_STITCH_FRAG = R"(
     }
 )";
 
-const std::string GRID_VERT = R"(
+const std::string MINOR_GRID_VERT = R"(
     precision highp float;
     attribute vec2 position;
 
@@ -158,9 +192,41 @@ const std::string GRID_VERT = R"(
         gl_Position = mvp * vec4(position, 0.0, 1.0);
     }
 )";
-const std::string GRID_FRAG = R"(
+const std::string MINOR_GRID_FRAG = R"(
     precision highp float;
+    uniform vec4 colour;
 
+    void main() {
+        gl_FragColor = colour;
+    }
+)";
+
+const std::string MAJOR_GRID_VERT = R"(
+    precision highp float;
+    attribute vec2 position;
+    attribute uint8_t corner;
+
+    uniform float normal;
+    uniform mat4 mvp;
+
+    void main() {
+        vec4 pos = mvp * vec4(position, 0.0, 1.0);
+
+        if (corner == 0 || corner == 1) {
+            pos = vec4(pos.x - normal, pos.yzw);
+        } else if (corner == 2 || corner == 3) {
+            pos = vec4(pos.x + normal, pos.yzw);
+        } else if (corner == 4 || corner == 5) {
+            pos = vec4(pos.x, pos.y - normal, pos.zw);
+        } else if (corner == 6 || corner == 7) {
+            pos = vec4(pos.x, pos.y + normal, pos.zw);
+        }
+
+        gl_Position = pos;
+    }
+)";
+const std::string MAJOR_GRID_FRAG = R"(
+    precision highp float;
     uniform vec4 colour;
 
     void main() {

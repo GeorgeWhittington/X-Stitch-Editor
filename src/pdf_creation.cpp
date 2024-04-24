@@ -299,70 +299,71 @@ void PDFWizard::create_symbol_key_page() {
     save_page(page, page_content_ctx, PAGE_MARGIN);
 }
 
-void PDFWizard::draw_gridlines(PageContentContext *ctx, int x_start, int x_end, int y_start, int y_end,
-                               float chart_x, float chart_x_end, float chart_y, float chart_y_end, float stitch_width) {
+void PDFWizard::draw_gridlines(PageContentContext *ctx, PatternPageContext p_ctx) {
     // Draw minor grid lines
     ctx->J(FT_Stroker_LineCap_::FT_STROKER_LINECAP_SQUARE); // set end cap
     ctx->w(0.35f); // line width
     ctx->RG(0.6f, 0.6f, 0.6f); // set stroke colour
-    for (int x = x_start; x < x_end; x++) {
-        int rel_x = x_start != 0 ? x - x_start : x;
-        float pos_x = chart_x + (rel_x * stitch_width);
+    for (int x = p_ctx.x_start; x < p_ctx.x_end; x++) {
+        int rel_x = p_ctx.x_start != 0 ? x - p_ctx.x_start : x;
+        float pos_x = p_ctx.chart_x + (rel_x * p_ctx.stitch_width);
 
         // Draw minor vertical grid lines
-        if (x > x_start)
-            draw_line(ctx, pos_x, chart_y, pos_x, chart_y_end);
+        if (x > p_ctx.x_start)
+            draw_line(ctx, pos_x, p_ctx.chart_y, pos_x, p_ctx.chart_y_end);
 
-        for (int y = y_start; y < y_end; y++) {
-            int rel_y = y_start != 0 ? y - y_start : y;
-            float pos_y = chart_y + (rel_y * stitch_width);
+        for (int y = p_ctx.y_start; y < p_ctx.y_end; y++) {
+            int rel_y = p_ctx.y_start != 0 ? y - p_ctx.y_start : y;
+            float pos_y = p_ctx.chart_y + (rel_y * p_ctx.stitch_width);
 
             // Draw minor horizontal grid lines
-            if (x == x_start && y > y_start)
-                draw_line(ctx, chart_x, pos_y, chart_x_end, pos_y);
+            if (x == p_ctx.x_start && y > p_ctx.y_start)
+                draw_line(ctx, p_ctx.chart_x, pos_y, p_ctx.chart_x_end, pos_y);
         }
     }
 
     // Draw major gridlines and line no's
     ctx->w(1.f); // line width
     ctx->RG(0.f, 0.f, 0.f); // set stroke colour
-    for (int x = x_start; x <= x_end; x++) {
+    for (int x = p_ctx.x_start; x <= p_ctx.x_end; x++) {
         if (x % 10 != 0)
             continue;
 
-        int rel_x = x_start != 0 ? x - x_start : x;
-        float pos_x = chart_x + (rel_x * stitch_width);
-        draw_line(ctx, pos_x, chart_y, pos_x, chart_y_end);
+        int rel_x = p_ctx.x_start != 0 ? x - p_ctx.x_start : x;
+        float pos_x = p_ctx.chart_x + (rel_x * p_ctx.stitch_width);
+        draw_line(ctx, pos_x, p_ctx.chart_y, pos_x, p_ctx.chart_y_end);
 
         // Write line no
         std::string x_str = std::to_string(x);
         float start = pos_x - 20.f;
         auto x_text_dimensions = _helvetica->CalculateTextDimensions(x_str, 10);
         float offset = (40.f - x_text_dimensions.width) / 2.f;
-        ctx->WriteText(start + offset, chart_y_end + 5.f, x_str, *_body_small_text_options);
+        ctx->WriteText(start + offset, p_ctx.chart_y_end + 5.f, x_str, *_body_small_text_options);
 
-        for (int y = y_start; y <= y_end; y++) {
+        for (int y = p_ctx.y_start; y <= p_ctx.y_end; y++) {
             int y_inverted = _project->height - y;
             if (y_inverted % 10 != 0 || y_inverted == 0)
                 continue;
 
-            int rel_y = y_start != 0 ? y - y_start : y;
-            float pos_y = chart_y + (rel_y * stitch_width);
-            draw_line(ctx, chart_x, pos_y, chart_x_end, pos_y);
+            int rel_y = p_ctx.y_start != 0 ? y - p_ctx.y_start : y;
+            float pos_y = p_ctx.chart_y + (rel_y * p_ctx.stitch_width);
+            draw_line(ctx, p_ctx.chart_x, pos_y, p_ctx.chart_x_end, pos_y);
 
             // Write line no
             std::string y_str = std::to_string(y_inverted);
             float start = pos_y - 20.f;
             auto y_text_dimensions = _helvetica->CalculateTextDimensions(y_str, 10);
             float offset = (40.f - y_text_dimensions.height) / 2.f;
-            ctx->WriteText(chart_x - y_text_dimensions.width - 5.f, start + offset, y_str, *_body_small_text_options);
+            ctx->WriteText(p_ctx.chart_x - y_text_dimensions.width - 5.f, start + offset, y_str, *_body_small_text_options);
         }
     }
 
     // Draw Outline
     ctx->w(1.5f); // line width
     ctx->RG(0.f, 0.f, 0.f); // set stroke colour
-    ctx->re(chart_x, chart_y, (x_end - x_start) * stitch_width, (y_end - y_start) * stitch_width); // draw rectangle
+    ctx->re(p_ctx.chart_x, p_ctx.chart_y,
+            (p_ctx.x_end - p_ctx.x_start) * p_ctx.stitch_width,
+            (p_ctx.y_end - p_ctx.y_start) * p_ctx.stitch_width); // draw rectangle
     ctx->S(); // stroke
 }
 
@@ -401,8 +402,7 @@ bool backstitch_intersects(BackStitch bs, float x_start, float x_end, float y_st
     return false;
 }
 
-void PDFWizard::draw_backstitches(PageContentContext *ctx, int x_start, int x_end, int y_start, int y_end,
-                          float chart_x, float chart_x_end, float chart_y, float chart_y_end, float stitch_width, bool over_symbols) {
+void PDFWizard::draw_backstitches(PageContentContext *ctx, PatternPageContext p_ctx, bool over_symbols) {
     ctx->w(2.f); // set line width
     ctx->J(FT_Stroker_LineCap_::FT_STROKER_LINECAP_ROUND); // set end cap
     if (_settings->render_in_colour) {
@@ -412,22 +412,22 @@ void PDFWizard::draw_backstitches(PageContentContext *ctx, int x_start, int x_en
     }
 
     for (BackStitch bs : _project->backstitches) {
-        if (!backstitch_intersects(bs, x_start, x_end, y_start, y_end))
+        if (!backstitch_intersects(bs, p_ctx.x_start, p_ctx.x_end, p_ctx.y_start, p_ctx.y_end))
             continue;
 
-        float rel_x1 = x_start != 0 ? bs.start[0] - x_start : bs.start[0];
-        float rel_x2 = x_start != 0 ? bs.end[0] - x_start : bs.end[0];
-        float rel_y1 = y_start != 0 ? bs.start[1] - y_start : bs.start[1];
-        float rel_y2 = y_start != 0 ? bs.end[1] - y_start : bs.end[1];
-        float pos_x1 = chart_x + (rel_x1 * stitch_width);
-        float pos_x2 = chart_x + (rel_x2 * stitch_width);
-        float pos_y1 = chart_y + (rel_y1 * stitch_width);
-        float pos_y2 = chart_y + (rel_y2 * stitch_width);
+        float rel_x1 = p_ctx.x_start != 0 ? bs.start[0] - p_ctx.x_start : bs.start[0];
+        float rel_x2 = p_ctx.x_start != 0 ? bs.end[0] - p_ctx.x_start : bs.end[0];
+        float rel_y1 = p_ctx.y_start != 0 ? bs.start[1] - p_ctx.y_start : bs.start[1];
+        float rel_y2 = p_ctx.y_start != 0 ? bs.end[1] - p_ctx.y_start : bs.end[1];
+        float pos_x1 = p_ctx.chart_x + (rel_x1 * p_ctx.stitch_width);
+        float pos_x2 = p_ctx.chart_x + (rel_x2 * p_ctx.stitch_width);
+        float pos_y1 = p_ctx.chart_y + (rel_y1 * p_ctx.stitch_width);
+        float pos_y2 = p_ctx.chart_y + (rel_y2 * p_ctx.stitch_width);
 
-        Vector2f bl(chart_x, chart_y);
-        Vector2f br(chart_x_end, chart_y);
-        Vector2f tl(chart_x, chart_y_end);
-        Vector2f tr(chart_x_end, chart_y_end);
+        Vector2f bl(p_ctx.chart_x, p_ctx.chart_y);
+        Vector2f br(p_ctx.chart_x_end, p_ctx.chart_y);
+        Vector2f tl(p_ctx.chart_x, p_ctx.chart_y_end);
+        Vector2f tr(p_ctx.chart_x_end, p_ctx.chart_y_end);
 
         std::pair<Vector2f, Vector2f> chart_edges[4] = {
             std::pair(tl, tr), // top
@@ -442,7 +442,7 @@ void PDFWizard::draw_backstitches(PageContentContext *ctx, int x_start, int x_en
             ctx->RG(c.r(), c.g(), c.b()); // set stroke colour
         }
 
-        if (backstitch_inside_chart(bs, x_start, x_end, y_start, y_end)) {
+        if (backstitch_inside_chart(bs, p_ctx.x_start, p_ctx.x_end, p_ctx.y_start, p_ctx.y_end)) {
             // backstitch fully inside chart, just draw
             DashPattern dash_pattern = _project_dashpatterns[bs.palette_index];
             ctx->q();
@@ -455,9 +455,9 @@ void PDFWizard::draw_backstitches(PageContentContext *ctx, int x_start, int x_en
             std::vector<Vector2f> intersections;
 
             // is one backstitch edge inside the chart?
-            if (bs.start[0] >= x_start && bs.start[0] <= x_end && bs.start[1] >= y_start && bs.start[1] <= y_end) {
+            if (bs.start[0] >= p_ctx.x_start && bs.start[0] <= p_ctx.x_end && bs.start[1] >= p_ctx.y_start && bs.start[1] <= p_ctx.y_end) {
                 intersections.push_back(Vector2f(pos_x1, pos_y1));
-            } else if (bs.end[0] >= x_start && bs.end[0] <= x_end && bs.end[1] >= y_start && bs.end[1] <= y_end) {
+            } else if (bs.end[0] >= p_ctx.x_start && bs.end[0] <= p_ctx.x_end && bs.end[1] >= p_ctx.y_start && bs.end[1] <= p_ctx.y_end) {
                 intersections.push_back(Vector2f(pos_x2, pos_y2));
             }
 
@@ -492,21 +492,20 @@ void PDFWizard::draw_backstitches(PageContentContext *ctx, int x_start, int x_en
     }
 }
 
-void PDFWizard::draw_chart(PageContentContext *ctx, int x_start, int x_end, int y_start, int y_end,
-                          float chart_x, float chart_x_end, float chart_y, float chart_y_end, float stitch_width, bool backstitch_only) {
+void PDFWizard::draw_chart(PageContentContext *ctx, PatternPageContext p_ctx, bool backstitch_only) {
     if (!backstitch_only) {
         // Draw symbols and optionally colour
         AbstractContentContext::ImageOptions image_options;
         image_options.transformationMethod = AbstractContentContext::eFit;
-        image_options.boundingBoxWidth = stitch_width - 3.f;
-        image_options.boundingBoxHeight = stitch_width - 3.f;
-        for (int x = x_start; x < x_end; x++) {
-            int rel_x = x_start != 0 ? x - x_start : x;
-            float pos_x = chart_x + (rel_x * stitch_width);
+        image_options.boundingBoxWidth = p_ctx.stitch_width - 3.f;
+        image_options.boundingBoxHeight = p_ctx.stitch_width - 3.f;
+        for (int x = p_ctx.x_start; x < p_ctx.x_end; x++) {
+            int rel_x = p_ctx.x_start != 0 ? x - p_ctx.x_start : x;
+            float pos_x = p_ctx.chart_x + (rel_x * p_ctx.stitch_width);
 
-            for (int y = y_start; y < y_end; y++) {
-                int rel_y = y_start != 0 ? y - y_start : y;
-                float pos_y = chart_y + (rel_y * stitch_width);
+            for (int y = p_ctx.y_start; y < p_ctx.y_end; y++) {
+                int rel_y = p_ctx.y_start != 0 ? y - p_ctx.y_start : y;
+                float pos_y = p_ctx.chart_y + (rel_y * p_ctx.stitch_width);
 
                 int palette_index = _project->thread_data[x][y];
                 if (palette_index == -1)
@@ -515,7 +514,7 @@ void PDFWizard::draw_chart(PageContentContext *ctx, int x_start, int x_end, int 
                 if (_settings->render_in_colour) {
                     nanogui::Color c = _project->palette[palette_index]->color();
                     ctx->rg(c.r(), c.g(), c.b()); // set fill colour
-                    ctx->re(pos_x, pos_y, stitch_width, stitch_width); // draw rectangle
+                    ctx->re(pos_x, pos_y, p_ctx.stitch_width, p_ctx.stitch_width); // draw rectangle
                     ctx->f(); // fill
                 }
 
@@ -524,9 +523,9 @@ void PDFWizard::draw_chart(PageContentContext *ctx, int x_start, int x_end, int 
         }
     }
 
-    draw_gridlines(ctx, x_start, x_end, y_start, y_end, chart_x, chart_x_end, chart_y, chart_y_end, stitch_width);
+    draw_gridlines(ctx, p_ctx);
     if (_project->backstitches.size() != 0)
-        draw_backstitches(ctx, x_start, x_end, y_start, y_end, chart_x, chart_x_end, chart_y, chart_y_end, stitch_width, !backstitch_only);
+        draw_backstitches(ctx, p_ctx, !backstitch_only);
 }
 
 void PDFWizard::create_chart_pages(bool backstitch_only) {
@@ -538,31 +537,35 @@ void PDFWizard::create_chart_pages(bool backstitch_only) {
 
         float chart_width = CHART_WIDTH;
         float chart_height = CHART_HEIGHT;
-        float chart_x = CHART_X;
-        float chart_y = CHART_Y;
-        float stitch_width;
+
+        PatternPageContext p_ctx;
+        p_ctx.chart_x = CHART_X;
+        p_ctx.chart_y = CHART_Y;
+        p_ctx.x_start = 0;
+        p_ctx.x_end = _project->width;
+        p_ctx.y_start = 0;
+        p_ctx.y_end = _project->height;
 
         // Scale by different axis depending on which aspect ratio is larger
         if ((chart_height / chart_width) >= ((float)_project->height / (float)_project->width)) {
-            stitch_width = chart_width / _project->width;
-            float new_page_height = stitch_width * _project->height;
+            p_ctx.stitch_width = chart_width / _project->width;
+            float new_page_height = p_ctx.stitch_width * _project->height;
             float vertical_margin = (chart_height - new_page_height) / 2;
             chart_height = new_page_height;
-            chart_y += vertical_margin;
+            p_ctx.chart_y += vertical_margin;
         } else {
-            stitch_width = chart_height / _project->height;
-            float new_page_width = stitch_width * _project->width;
+            p_ctx.stitch_width = chart_height / _project->height;
+            float new_page_width = p_ctx.stitch_width * _project->width;
             float horizontal_margin = (chart_width - new_page_width) / 2;
             chart_width = new_page_width;
-            chart_x += horizontal_margin;
+            p_ctx.chart_x += horizontal_margin;
         }
 
-        float chart_x_end = chart_x + (_project->width * stitch_width);
-        float chart_y_end = chart_y + (_project->height * stitch_width);
+        p_ctx.chart_x_end = p_ctx.chart_x + (_project->width * p_ctx.stitch_width);
+        p_ctx.chart_y_end = p_ctx.chart_y + (_project->height * p_ctx.stitch_width);
 
-        draw_chart(page_content_ctx, 0, _project->width, 0, _project->height,
-                  chart_x, chart_x_end, chart_y, chart_y_end, stitch_width, backstitch_only);
-        save_page(page, page_content_ctx, chart_x);
+        draw_chart(page_content_ctx, p_ctx, backstitch_only);
+        save_page(page, page_content_ctx, p_ctx.chart_x);
     } else {
         // tile pages
         for (int y = 0; y < _pattern_no_pages_tall; y++) {
@@ -578,28 +581,29 @@ void PDFWizard::create_chart_page(int page_x, int page_y, bool backstitch_only) 
     page->SetMediaBox(PDFRectangle(0, 0, A4_WIDTH, A4_HEIGHT));
     PageContentContext *page_content_ctx = _pdf_writer.StartPageContentContext(page);
 
-    float chart_x = CHART_X;
-    float chart_y = CHART_Y;
-    int x_start = page_x * CHART_STITCHES_X;
-    int y_start = std::max(_project->height - ((page_y + 1) * CHART_STITCHES_Y), 0);
-    int x_end = std::min(x_start + CHART_STITCHES_X, _project->width);
-    int y_end = y_start + CHART_STITCHES_Y;
+    PatternPageContext p_ctx;
+    p_ctx.chart_x = CHART_X;
+    p_ctx.chart_y = CHART_Y;
+    p_ctx.x_start = page_x * CHART_STITCHES_X;
+    p_ctx.y_start = std::max(_project->height - ((page_y + 1) * CHART_STITCHES_Y), 0);
+    p_ctx.x_end = std::min(p_ctx.x_start + CHART_STITCHES_X, _project->width);
+    p_ctx.y_end = p_ctx.y_start + CHART_STITCHES_Y;
+    p_ctx.stitch_width = CHART_STITCH_WIDTH;
 
     // If the end point we calculate is greater than to the start point of the previous page, it's wrong
-    if (y_end > _project->height - (page_y * CHART_STITCHES_Y))
-        y_end = _project->height % CHART_STITCHES_Y;
+    if (p_ctx.y_end > _project->height - (page_y * CHART_STITCHES_Y))
+        p_ctx.y_end = _project->height % CHART_STITCHES_Y;
 
     // If a section does not use all of CHART_STITCHES_Y, the vertical start point needs to be adjusted up
-    int section_height = y_end - y_start;
+    int section_height = p_ctx.y_end - p_ctx.y_start;
     if (section_height < CHART_STITCHES_Y)
-        chart_y = chart_y + ((CHART_STITCHES_Y - section_height) * CHART_STITCH_WIDTH);
+        p_ctx.chart_y = p_ctx.chart_y + ((CHART_STITCHES_Y - section_height) * CHART_STITCH_WIDTH);
 
-    float chart_x_end = chart_x + ((x_end - x_start) * CHART_STITCH_WIDTH);
-    float chart_y_end = chart_y + (section_height * CHART_STITCH_WIDTH);
+    p_ctx.chart_x_end = p_ctx.chart_x + ((p_ctx.x_end - p_ctx.x_start) * CHART_STITCH_WIDTH);
+    p_ctx.chart_y_end = p_ctx.chart_y + (section_height * CHART_STITCH_WIDTH);
 
-    draw_chart(page_content_ctx, x_start, x_end, y_start, y_end,
-              chart_x, chart_x_end, chart_y, chart_y_end, CHART_STITCH_WIDTH, backstitch_only);
-    save_page(page, page_content_ctx, chart_x);
+    draw_chart(page_content_ctx, p_ctx, backstitch_only);
+    save_page(page, page_content_ctx, p_ctx.chart_x);
 }
 
 void PDFWizard::save_page(PDFPage *page, PageContentContext *page_content_ctx, float margin_x) {

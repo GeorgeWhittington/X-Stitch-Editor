@@ -13,6 +13,8 @@ public:
     void close_all_submenus();
     void close_all_menus();
 
+private:
+    XStitchEditorApplication *_app;
     nanogui::PopupButton *_menu_button;
     nanogui::PopupButton *_file_button;
     nanogui::PopupButton *_edit_button;
@@ -20,9 +22,6 @@ public:
 
     nanogui::Button *_show_tools_button;
     nanogui::Button *_show_minimap_button;
-
-private:
-    XStitchEditorApplication *_app;
 
     void new_project();
     void new_project_from_image();

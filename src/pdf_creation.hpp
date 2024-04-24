@@ -21,6 +21,18 @@ struct TableRow {
     int no_backstitches = 0;
 };
 
+struct PatternPageContext {
+    int x_start;
+    int x_end;
+    int y_start;
+    int y_end;
+    float chart_x;
+    float chart_x_end;
+    float chart_y;
+    float chart_y_end;
+    float stitch_width;
+};
+
 typedef std::vector<double> DashPattern;
 
 void draw_line(PageContentContext *ctx, float x1, float y1, float x2, float y2);
@@ -36,13 +48,9 @@ private:
     void create_chart_pages(bool backstitch_only);
     void create_chart_page(int page_x, int page_y, bool backstitch_only);
     void save_page(PDFPage *page, PageContentContext *page_content_ctx, float margin_x);
-    void draw_gridlines(PageContentContext *ctx, int x_start, int x_end, int y_start, int y_end,
-                        float chart_x, float chart_x_end, float chart_y, float chart_y_end, float stitch_width);
-    void draw_backstitches(PageContentContext *ctx, int x_start, int x_end, int y_start, int y_end,
-                           float chart_x, float chart_x_end, float chart_y, float chart_y_end, float stitch_width, bool over_symbols);
-    void draw_chart(PageContentContext *ctx, int x_start, int x_end, int y_start, int y_end,
-                   float chart_x, float chart_x_end, float chart_y, float chart_y_end, float stitch_width, bool backstitch_only);
-
+    void draw_gridlines(PageContentContext *ctx, PatternPageContext p_ctx);
+    void draw_backstitches(PageContentContext *ctx, PatternPageContext p_ctx, bool over_symbols);
+    void draw_chart(PageContentContext *ctx, PatternPageContext p_ctx, bool backstitch_only);
     void fetch_symbol_data();
 
     Project *_project;
