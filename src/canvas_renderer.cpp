@@ -14,27 +14,44 @@
 using namespace nanogui;
 
 CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) :
-    _camera(new Camera2D(app, app->_project->width, app->_project->height)),
+    _app(app),
     _render_pass(new RenderPass({app})),
-    _texture(new Texture(
-        Texture::PixelFormat::RGBA, Texture::ComponentFormat::UInt8,
-        Vector2i(app->_project->width, app->_project->height),
-        Texture::InterpolationMode::Bilinear, Texture::InterpolationMode::Nearest
-    )),
     _cross_stitch_shader(new Shader(_render_pass.get(), "cross_stitches", CROSS_STITCH_VERT, CROSS_STITCH_FRAG)),
     _minor_grid_shader(new Shader(_render_pass.get(), "minor_grid", MINOR_GRID_VERT, MINOR_GRID_FRAG)),
     _major_grid_shader(new Shader(_render_pass.get(), "major_grid", MAJOR_GRID_VERT, MAJOR_GRID_FRAG)),
     _back_stitch_shader(new Shader(_render_pass.get(), "back_stitch", BACK_STITCH_VERT, BACK_STITCH_FRAG)),
     _back_stitch_ghost_shader(new Shader(_render_pass.get(), "back_stitch_ghost", BACK_STITCH_VERT, BACK_STITCH_FRAG))
 {
-    _app = app;
-    int width = app->_project->width;
-    int height = app->_project->height;
-
-    _texture->upload(_app->_project->texture_data_array.get());
-
     _render_pass->set_clear_color(0, Color(0.3f, 0.3f, 0.32f, 1.f));
     _render_pass->set_cull_mode(RenderPass::CullMode::Disabled);
+};
+
+void CanvasRenderer::deactivate() {
+    _major_grid_indices_size = 0;
+    _minor_grid_indices_size = 0;
+    _backstitch_indices_size = 0;
+    _backstitch_ghost_indices_size = 0;
+    _drawing = false;
+}
+
+void CanvasRenderer::update_all_buffers() {
+    int width = _app->_project->width;
+    int height = _app->_project->height;
+
+    if (_camera != nullptr)
+        _camera.release();
+
+    if (_texture != nullptr)
+        _texture.release();
+
+    _camera = std::make_unique<Camera2D>(_app, width, height);
+    _texture = std::make_unique<Texture>(
+        Texture::PixelFormat::RGBA, Texture::ComponentFormat::UInt8,
+        Vector2i(width, height),
+        Texture::InterpolationMode::Bilinear, Texture::InterpolationMode::Nearest
+    );
+
+    upload_texture();
 
     if (width > height) {
         _v = (float)height / (float)width;
@@ -131,10 +148,10 @@ CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) :
         major_gridmarks[(8*i) + 7] = y;
     }
 
-    _major_grid_indices_size = (major_grid_total_verts / 4) * 6;
+    _major_grid_indices_size = (major_grid_total_verts / 8) * 6;
     uint32_t major_grid_indices[_major_grid_indices_size];
     int i = 0;
-    for (int j = 0; j < major_grid_total_verts; j+=4) {
+    for (int j = 0; j < major_grid_total_verts / 2; j+=4) {
         major_grid_indices[6*i]       = j + 0;
         major_grid_indices[(6*i) + 1] = j + 1;
         major_grid_indices[(6*i) + 2] = j + 2;
@@ -171,12 +188,11 @@ CanvasRenderer::CanvasRenderer(XStitchEditorApplication *app) :
         _major_grid_shader->set_buffer("indices", VariableType::UInt32, {(size_t)_major_grid_indices_size}, major_grid_indices);
         _major_grid_shader->set_buffer("corner", VariableType::UInt8, {(size_t)major_gridmark_corner_size}, major_gridmark_corner);
         _major_grid_shader->set_buffer("colour", VariableType::Float32, {4}, major_color);
-    } else {
-        _major_grid_shader.release();
     }
 
     update_backstitch_buffers();
-};
+    _drawing = true;
+}
 
 const u_int32_t circle_vert_layout[50 * 3] = {
     0, 1, 2,    0, 2, 3,    0, 3, 4,    0, 4, 5,
@@ -250,8 +266,6 @@ void create_line_vertices(Vector2f start, Vector2f end, Vector2f normal_vector, 
     ind_buffer->push_back(line_start + 1);
     ind_buffer->push_back(line_start + 2);
 }
-
-
 
 void CanvasRenderer::update_backstitch_buffers() {
     std::vector<BackStitch> *backstitches = &_app->_project->backstitches;
@@ -365,6 +379,9 @@ void CanvasRenderer::upload_texture() {
 }
 
 void CanvasRenderer::render() {
+    if (!_drawing)
+        return;
+
     Vector2i device_size = _app->framebuffer_size();
     _render_pass->resize(device_size);
 
@@ -404,7 +421,7 @@ void CanvasRenderer::render_cs_shader(Matrix4f mvp) {
 };
 
 void CanvasRenderer::render_minor_grid_shader(Matrix4f mvp) {
-    if (_minor_grid_shader == nullptr)
+    if (_minor_grid_shader == nullptr || _minor_grid_indices_size == 0)
         return;
 
     _minor_grid_shader->set_uniform("mvp", mvp);
@@ -416,7 +433,7 @@ void CanvasRenderer::render_minor_grid_shader(Matrix4f mvp) {
 }
 
 void CanvasRenderer::render_major_grid_shader(Matrix4f mvp) {
-    if (_major_grid_shader == nullptr)
+    if (_major_grid_shader == nullptr || _major_grid_indices_size == 0)
         return;
 
     // find distance in ortho ndc of two pixels

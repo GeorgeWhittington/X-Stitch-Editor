@@ -33,7 +33,10 @@ void ExitToMainMenuWindow::initialise() {
     });
 };
 
-XStitchEditorApplication::XStitchEditorApplication() : Screen(Vector2i(1024, 748), "X Stitch Editor", true) {
+XStitchEditorApplication::XStitchEditorApplication() :
+    Screen(Vector2i(1024, 748), "X Stitch Editor", true),
+    _canvas_renderer(new CanvasRenderer(this))
+{
     load_all_threads();
 
     CustomTheme *theme = new CustomTheme(nvg_context());
@@ -84,19 +87,16 @@ void XStitchEditorApplication::switch_project(Project *project) {
     _selected_thread = nullptr;
     tool_window->update_selected_thread_widget();
 
+    _canvas_renderer->deactivate();
+
     if (_project != nullptr) {
         delete _project;
         _project = nullptr;
     }
 
-    if (_canvas_renderer != nullptr) {
-        delete _canvas_renderer;
-        _canvas_renderer = nullptr;
-    }
-
     if (project != nullptr) {
         _project = project;
-        _canvas_renderer = new CanvasRenderer(this);
+        _canvas_renderer->update_all_buffers();
         tool_window->set_palette();
     }
 }
@@ -184,23 +184,18 @@ void XStitchEditorApplication::open_project() {
     switch_application_state(ApplicationStates::PROJECT_OPEN);
 }
 
-void XStitchEditorApplication::draw(NVGcontext *ctx) {
+void XStitchEditorApplication::draw_contents() {
+    if (!_canvas_renderer->_drawing) {
+        Screen::draw_contents();
+        return;
+    }
+
     double current_frame = glfwGetTime();
     _time_delta = current_frame - _last_frame;
     _last_frame = current_frame;
 
     // TODO: iterate visible windows, calculate if they are out of view
     // if they are, put them back to their default position
-
-    /* Draw the user interface */
-    Screen::draw(ctx);
-};
-
-void XStitchEditorApplication::draw_contents() {
-    if (_canvas_renderer == nullptr) {
-        Screen::draw_contents();
-        return;
-    }
 
     _canvas_renderer->render();
 
@@ -224,7 +219,7 @@ bool XStitchEditorApplication::keyboard_event(int key, int scancode, int action,
         return true;
     }
 
-    if (_canvas_renderer == nullptr)
+    if (!_canvas_renderer->_drawing)
         return false;
 
 #if defined(__APPLE__)
@@ -245,22 +240,21 @@ bool XStitchEditorApplication::keyboard_event(int key, int scancode, int action,
         }
     }
 
-    std::shared_ptr<Camera2D> camera = _canvas_renderer->_camera;
     float camera_speed = 2 * _time_delta;
 
     if (key == GLFW_KEY_LEFT)
-        camera->pan_camera(Vector2f(camera_speed, 0), _canvas_renderer->_position);
+        _canvas_renderer->_camera->pan_camera(Vector2f(camera_speed, 0), _canvas_renderer->_position);
     if (key == GLFW_KEY_RIGHT)
-        camera->pan_camera(Vector2f(-camera_speed, 0), _canvas_renderer->_position);
+        _canvas_renderer->_camera->pan_camera(Vector2f(-camera_speed, 0), _canvas_renderer->_position);
     if (key == GLFW_KEY_UP)
-        camera->pan_camera(Vector2f(0, -camera_speed), _canvas_renderer->_position);
+        _canvas_renderer->_camera->pan_camera(Vector2f(0, -camera_speed), _canvas_renderer->_position);
     if (key == GLFW_KEY_DOWN)
-        camera->pan_camera(Vector2f(0, camera_speed), _canvas_renderer->_position);
+        _canvas_renderer->_camera->pan_camera(Vector2f(0, camera_speed), _canvas_renderer->_position);
 
     if (key == GLFW_KEY_EQUAL && modifiers & control_command_key)
-        camera->zoom_to_point(Vector2f(0, 0), 1.f + camera_speed, _canvas_renderer->_position);
+        _canvas_renderer->_camera->zoom_to_point(Vector2f(0, 0), 1.f + camera_speed, _canvas_renderer->_position);
     if (key == GLFW_KEY_MINUS && modifiers & control_command_key)
-        camera->zoom_to_point(Vector2f(0, 0), 1.f - camera_speed, _canvas_renderer->_position);
+        _canvas_renderer->_camera->zoom_to_point(Vector2f(0, 0), 1.f - camera_speed, _canvas_renderer->_position);
 
     return false;
 }
@@ -269,7 +263,7 @@ bool XStitchEditorApplication::scroll_event(const nanogui::Vector2i &p, const na
     if (Screen::scroll_event(p, rel))
         return true;
 
-    if (_canvas_renderer == nullptr)
+    if (!_canvas_renderer->_drawing)
         return false;
 
     // We only care about vertical scroll
@@ -291,17 +285,16 @@ bool XStitchEditorApplication::mouse_button_event(const Vector2i &p, int button,
     if (Widget::mouse_button_event(p, button, down, modifiers))
         return true;
 
-    if (_canvas_renderer == nullptr)
+    if (!_canvas_renderer->_drawing)
         return false;
 
     if (button != GLFW_MOUSE_BUTTON_1 && button != GLFW_MOUSE_BUTTON_2)
         return false;
 
-    std::shared_ptr<Camera2D> camera = _canvas_renderer->_camera;
     Vector2f mouse_ndc;
 
     try {
-        mouse_ndc = camera->screen_to_ndc(p);
+        mouse_ndc = _canvas_renderer->_camera->screen_to_ndc(p);
     } catch (std::invalid_argument&) {
         return false;
     }
@@ -311,11 +304,11 @@ bool XStitchEditorApplication::mouse_button_event(const Vector2i &p, int button,
 
     if (button == GLFW_MOUSE_BUTTON_1 && down) {
         if (_selected_tool == ToolOptions::ZOOM_IN) {
-            camera->zoom_to_point(mouse_ndc, 1.1f, _canvas_renderer->_position);
+            _canvas_renderer->_camera->zoom_to_point(mouse_ndc, 1.1f, _canvas_renderer->_position);
             return false;
         }
         if (_selected_tool == ToolOptions::ZOOM_OUT) {
-            camera->zoom_to_point(mouse_ndc, 0.9f, _canvas_renderer->_position);
+            _canvas_renderer->_camera->zoom_to_point(mouse_ndc, 0.9f, _canvas_renderer->_position);
             return false;
         }
 
@@ -385,7 +378,7 @@ bool XStitchEditorApplication::mouse_motion_event(const Vector2i &p, const Vecto
     if (Widget::mouse_motion_event(p, rel, button, modifiers))
         return true;
 
-    if (_canvas_renderer == nullptr)
+    if (!_canvas_renderer->_drawing)
         return false;
 
     // TODO: check that this gets the right result on windows/linux and
@@ -395,8 +388,6 @@ bool XStitchEditorApplication::mouse_motion_event(const Vector2i &p, const Vecto
 #else
     int button_1 = GLFW_MOUSE_BUTTON_1;
 #endif
-
-    std::shared_ptr<Camera2D> camera = _canvas_renderer->_camera;
 
     // Halfway through drawing a backstitch
     if (_selected_tool == ToolOptions::BACK_STITCH && _previous_backstitch_point != NO_SUBSTITCH_SELECTED) {
@@ -411,7 +402,7 @@ bool XStitchEditorApplication::mouse_motion_event(const Vector2i &p, const Vecto
     if (button == button_1) {
         Vector2f mouse_ndc;
         try {
-            mouse_ndc = camera->screen_to_ndc(p);
+            mouse_ndc = _canvas_renderer->_camera->screen_to_ndc(p);
         } catch (const std::invalid_argument&) {
             return false;
         }
@@ -421,13 +412,13 @@ bool XStitchEditorApplication::mouse_motion_event(const Vector2i &p, const Vecto
             Vector2f prev_ndc;
             Vector2f current_ndc;
             try {
-                prev_ndc = camera->screen_to_ortho_ndc(prev_position);
-                current_ndc = camera->screen_to_ortho_ndc(p);
+                prev_ndc = _canvas_renderer->_camera->screen_to_ortho_ndc(prev_position);
+                current_ndc = _canvas_renderer->_camera->screen_to_ortho_ndc(p);
             } catch (const std::invalid_argument&) {
                 return false;
             }
 
-            camera->pan_camera(Vector2f(current_ndc[0] - prev_ndc[0], current_ndc[1] - prev_ndc[1]), _canvas_renderer->_position);
+            _canvas_renderer->_camera->pan_camera(Vector2f(current_ndc[0] - prev_ndc[0], current_ndc[1] - prev_ndc[1]), _canvas_renderer->_position);
         }
 
         if (tool_window->mouse_over(p))

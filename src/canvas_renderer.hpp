@@ -10,16 +10,19 @@ class Camera2D;
 class CanvasRenderer {
 public:
     CanvasRenderer(XStitchEditorApplication *app);
+    void deactivate();
+    void update_all_buffers();
     void update_backstitch_buffers();
     void clear_ghost_backstitch();
     void move_ghost_backstitch(nanogui::Vector2f end, Thread *thread);
     void upload_texture();
     void render();
 
-    std::shared_ptr<Camera2D> _camera;
+    std::unique_ptr<Camera2D> _camera;
     float _position[3*4];
     nanogui::Vector2i _selected_stitch = NO_STITCH_SELECTED;
     nanogui::Vector2f _selected_sub_stitch = NO_SUBSTITCH_SELECTED;
+    bool _drawing = false;
 
 private:
     nanogui::Vector2i get_mouse_position();
@@ -42,8 +45,8 @@ private:
 
     float _canvas_height_ndc;
     float _minor_grid_mark_distance;
-    int _major_grid_indices_size;
-    int _minor_grid_indices_size;
+    int _major_grid_indices_size = 0;
+    int _minor_grid_indices_size = 0;
     int _backstitch_indices_size = 0;
     int _backstitch_ghost_indices_size = 0;
     float _h = 1.f;
@@ -110,13 +113,13 @@ const std::string MAJOR_GRID_VERT = R"(
         vec4 pos = mvp * vec4(position, 0.0, 1.0);
 
         if (corner == 0 || corner == 1) {
-            pos = vec4(pos.x - normal, pos.yzw);
+            pos.x -= normal;
         } else if (corner == 2 || corner == 3) {
-            pos = vec4(pos.x + normal, pos.yzw);
+            pos.x += normal;
         } else if (corner == 4 || corner == 5) {
-            pos = vec4(pos.x, pos.y - normal, pos.zw);
+            pos.y -= normal;
         } else if (corner == 6 || corner == 7) {
-            pos = vec4(pos.x, pos.y + normal, pos.zw);
+            pos.y += normal;
         }
 
         gl_Position = pos;
@@ -204,7 +207,7 @@ const std::string MINOR_GRID_FRAG = R"(
 const std::string MAJOR_GRID_VERT = R"(
     precision highp float;
     attribute vec2 position;
-    attribute uint8_t corner;
+    attribute uint corner;
 
     uniform float normal;
     uniform mat4 mvp;
@@ -213,13 +216,13 @@ const std::string MAJOR_GRID_VERT = R"(
         vec4 pos = mvp * vec4(position, 0.0, 1.0);
 
         if (corner == 0 || corner == 1) {
-            pos = vec4(pos.x - normal, pos.yzw);
+            pos.x -= normal;
         } else if (corner == 2 || corner == 3) {
-            pos = vec4(pos.x + normal, pos.yzw);
+            pos.x += normal;
         } else if (corner == 4 || corner == 5) {
-            pos = vec4(pos.x, pos.y - normal, pos.zw);
+            pos.y -= normal;
         } else if (corner == 6 || corner == 7) {
-            pos = vec4(pos.x, pos.y + normal, pos.zw);
+            pos.y += normal;
         }
 
         gl_Position = pos;
@@ -249,13 +252,19 @@ const std::string CROSS_STITCH_VERT = R"(
     }
 )";
 const std::string CROSS_STITCH_FRAG = R"(
+    #if __VERSION__ < 130
+    #define TEXTURE2D texture2D
+    #else
+    #define TEXTURE2D texture
+    #endif
+
     precision highp float;
     varying vec2 textureCoord;
 
     uniform sampler2D cross_stitch_texture;
 
     void main() {
-        gl_FragColor = texture(cross_stitch_texture, textureCoord);
+        gl_FragColor = TEXTURE2D(cross_stitch_texture, textureCoord);
     }
 )";
 #elif defined(NANOGUI_USE_METAL)
@@ -330,13 +339,13 @@ const std::string MAJOR_GRID_VERT = R"(
         float4 pos = mvp * float4(position[id], 0.f, 1.f);
 
         if (corner[id] == 0 || corner[id] == 1) {
-            pos = float4(pos.x - normal, pos.yzw);
+            pos.x -= normal;
         } else if (corner[id] == 2 || corner[id] == 3) {
-            pos = float4(pos.x + normal, pos.yzw);
+            pos.x += normal;
         } else if (corner[id] == 4 || corner[id] == 5) {
-            pos = float4(pos.x, pos.y - normal, pos.zw);
+            pos.y -= normal;
         } else if (corner[id] == 6 || corner[id] == 7) {
-            pos = float4(pos.x, pos.y + normal, pos.zw);
+            pos.y += normal;
         }
 
         VertexOut vert;

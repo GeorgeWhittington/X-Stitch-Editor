@@ -48,7 +48,6 @@ public:
     void switch_project(Project *project);
     void switch_application_state(ApplicationStates state);
     void open_project();
-    virtual void draw(NVGcontext *ctx);
     virtual void draw_contents();
     virtual bool keyboard_event(int key, int scancode, int action, int modifiers);
     virtual bool scroll_event(const nanogui::Vector2i &p, const nanogui::Vector2f &rel);
