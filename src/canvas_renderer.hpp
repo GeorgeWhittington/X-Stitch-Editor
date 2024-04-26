@@ -332,7 +332,7 @@ const std::string MAJOR_GRID_VERT = R"(
     };
 
     vertex VertexOut vertex_main(const device packed_float2 *position,
-                                 const device uint8_t *corner,
+                                 const device uint32_t *corner,
                                  constant float &normal,
                                  constant float4x4 &mvp,
                                  uint id [[vertex_id]]) {
