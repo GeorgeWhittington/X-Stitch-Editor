@@ -63,10 +63,10 @@ public:
     ExitToMainMenuWindow *exit_to_main_menu_window;
     PDFWindow *pdf_window;
 
-    CanvasRenderer *_canvas_renderer;
-    Project *_project;
+    CanvasRenderer *_canvas_renderer = nullptr;
+    Project *_project = nullptr;
     ToolOptions _selected_tool = ToolOptions::MOVE;
-    Thread *_selected_thread;
+    Thread *_selected_thread = nullptr;
     std::map<std::string, std::map<std::string, Thread*>*> _threads;
     nanogui::Vector2f _previous_backstitch_point = NO_SUBSTITCH_SELECTED;
 };

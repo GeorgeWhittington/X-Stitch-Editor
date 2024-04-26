@@ -104,7 +104,7 @@ const std::string MINOR_GRID_FRAG = R"(
 const std::string MAJOR_GRID_VERT = R"(
     #version 330 core
     layout (location = 0) in vec2 position;
-    layout (location = 1) in uint8_t corner;
+    layout (location = 1) in uint corner;
 
     uniform mat4 mvp;
     uniform float normal;
@@ -112,13 +112,13 @@ const std::string MAJOR_GRID_VERT = R"(
     void main() {
         vec4 pos = mvp * vec4(position, 0.0, 1.0);
 
-        if (corner == 0 || corner == 1) {
+        if (corner == 0U || corner == 1U) {
             pos.x -= normal;
-        } else if (corner == 2 || corner == 3) {
+        } else if (corner == 2U || corner == 3U) {
             pos.x += normal;
-        } else if (corner == 4 || corner == 5) {
+        } else if (corner == 4U || corner == 5U) {
             pos.y -= normal;
-        } else if (corner == 6 || corner == 7) {
+        } else if (corner == 6U || corner == 7U) {
             pos.y += normal;
         }
 

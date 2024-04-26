@@ -162,7 +162,7 @@ void CanvasRenderer::update_all_buffers() {
     };
 
     int major_gridmark_corner_size = major_grid_total_verts / 2;
-    uint8_t major_gridmark_corner[major_gridmark_corner_size];
+    uint32_t major_gridmark_corner[major_gridmark_corner_size];
     for (int i = 0; i < major_grid_total_vertical_verts / 8; i++) {
         major_gridmark_corner[(4*i)]     = 0;
         major_gridmark_corner[(4*i) + 1] = 1;
@@ -179,14 +179,16 @@ void CanvasRenderer::update_all_buffers() {
     float minor_color[4] = {0.5f, 0.5f, 0.5f, 1.f};
     float major_color[4] = {0.f, 0.f, 0.f, 1.f};
 
-    _minor_grid_shader->set_buffer("position", VariableType::Float32, {(size_t)(minor_grid_total_verts) / 2, 2}, minor_gridmarks);
-    _minor_grid_shader->set_buffer("indices", VariableType::UInt32, {(size_t)_minor_grid_indices_size}, minor_grid_indices);
-    _minor_grid_shader->set_buffer("colour", VariableType::Float32, {4}, minor_color);
+    if (minor_grid_total_verts > 0) {
+        _minor_grid_shader->set_buffer("position", VariableType::Float32, {(size_t)(minor_grid_total_verts) / 2, 2}, minor_gridmarks);
+        _minor_grid_shader->set_buffer("indices", VariableType::UInt32, {(size_t)_minor_grid_indices_size}, minor_grid_indices);
+        _minor_grid_shader->set_buffer("colour", VariableType::Float32, {4}, minor_color);
+    }
 
     if (major_grid_total_verts > 0) {
         _major_grid_shader->set_buffer("position", VariableType::Float32, {(size_t)(major_grid_total_verts) / 2, 2}, major_gridmarks);
         _major_grid_shader->set_buffer("indices", VariableType::UInt32, {(size_t)_major_grid_indices_size}, major_grid_indices);
-        _major_grid_shader->set_buffer("corner", VariableType::UInt8, {(size_t)major_gridmark_corner_size}, major_gridmark_corner);
+        _major_grid_shader->set_buffer("corner", VariableType::UInt32, {(size_t)major_gridmark_corner_size}, major_gridmark_corner);
         _major_grid_shader->set_buffer("colour", VariableType::Float32, {4}, major_color);
     }
 
