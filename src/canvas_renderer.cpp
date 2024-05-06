@@ -438,9 +438,9 @@ void CanvasRenderer::render_major_grid_shader(Matrix4f mvp) {
     if (_major_grid_shader == nullptr || _major_grid_indices_size == 0)
         return;
 
-    // find distance in ortho ndc of two pixels
-    Vector2f p1 = _camera->screen_to_ortho_ndc(Vector2i(0, 0));
-    Vector2f p2 = _camera->screen_to_ortho_ndc(Vector2i(0, 1));
+    // find distance in ortho ndc of a pixel
+    Vector2f p1 = _camera->screen_to_ndc(Vector2i(0, 0));
+    Vector2f p2 = _camera->screen_to_ndc(Vector2i(0, 1));
     float normal = p2[1] - p1[1];
 
     _major_grid_shader->set_uniform("normal", normal);

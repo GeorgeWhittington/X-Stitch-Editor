@@ -19,7 +19,7 @@ void SplashScreenWindow::initialise() {
     button = new Button(this, "Create new project from an image");
     button->set_callback([this](){
         XStitchEditorApplication* app = (XStitchEditorApplication*) m_parent;
-        app->switch_application_state(ApplicationStates::CREATE_DITHERED_PROJECT);
+        app->switch_application_state(ApplicationStates::CREATE_PROJECT_FROM_IMAGE);
     });
     button->set_font_size(30);
 

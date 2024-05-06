@@ -26,6 +26,8 @@ class SplashScreenWindow;
 class NewProjectWindow;
 class MainMenuWindow;
 class PDFWindow;
+class LoadFromImageWindow;
+class DitheringWindow;
 class CanvasRenderer;
 struct Project;
 class XStitchEditorApplication;
@@ -38,6 +40,8 @@ public:
 
 class XStitchEditorApplication : public nanogui::Screen {
 private:
+    void set_all_windows_invisible();
+
     ApplicationStates _previous_state = ApplicationStates::LAUNCH;
 
     float _last_frame = 0.0f;
@@ -62,6 +66,8 @@ public:
     MainMenuWindow *main_menu_window;
     ExitToMainMenuWindow *exit_to_main_menu_window;
     PDFWindow *pdf_window;
+    LoadFromImageWindow *load_from_image_window;
+    DitheringWindow *dithering_window;
 
     CanvasRenderer *_canvas_renderer = nullptr;
     Project *_project = nullptr;

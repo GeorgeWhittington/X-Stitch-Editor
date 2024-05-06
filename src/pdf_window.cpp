@@ -57,7 +57,7 @@ void PDFWindow::initialise() {
 
     button = new Button(button_widget, "Cancel");
     button->set_callback([this](){
-        clear();
+        reset_form();
         set_visible(false);
         _app->main_menu_window->close_all_menus();
     });
@@ -65,7 +65,7 @@ void PDFWindow::initialise() {
     center();
 }
 
-void PDFWindow::clear() {
+void PDFWindow::reset_form() {
     _errors->set_visible(false);
     _checkbox_colour->set_checked(true);
     _checkbox_bw->set_checked(false);
@@ -101,7 +101,7 @@ void PDFWindow::save_pdf() {
 
     // hide and clear to default values
     set_visible(false);
-    clear();
+    reset_form();
 
     // Pass in settings from wizard here
     PDFWizard pdf_wizard(_app->_project, &settings);

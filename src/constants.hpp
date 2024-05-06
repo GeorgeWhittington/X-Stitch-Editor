@@ -15,7 +15,9 @@ enum ToolOptions {
 enum ApplicationStates {
     LAUNCH,
     CREATE_PROJECT,
+    CREATE_PROJECT_FROM_IMAGE,
     CREATE_DITHERED_PROJECT,
+    CREATE_QUANTISED_PROJECT,
     PROJECT_OPEN
 };
 

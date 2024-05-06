@@ -115,7 +115,19 @@ void MainMenuWindow::new_project() {
 }
 
 void MainMenuWindow::new_project_from_image() {
-    // TODO
+    auto dlg = new nanogui::MessageDialog(_app, nanogui::MessageDialog::Type::Question, "", "Do you want to save your current project first?", "Yes", "No", true);
+    dlg->set_callback([this](int result) {
+        if (!result) {
+            bool saved = save();
+            if (!saved) {
+                close_all_menus();
+                return;
+            }
+        }
+
+        _app->switch_project(nullptr);
+        _app->switch_application_state(ApplicationStates::CREATE_PROJECT_FROM_IMAGE);
+    });
 }
 
 void MainMenuWindow::open_project() {

@@ -391,9 +391,8 @@ deleted: // continue to check next backstitch
     }
 
     // Delete all intersecting backstitches
-    for (auto rit = to_delete.rbegin(); rit != to_delete.rend(); rit++) {
+    for (auto rit = to_delete.rbegin(); rit != to_delete.rend(); rit++)
         backstitches.erase(backstitches.begin() + *rit);
-    }
 }
 
 void Project::collate_backstitches() {

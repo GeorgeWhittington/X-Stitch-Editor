@@ -13,6 +13,8 @@
 #include "new_project_window.hpp"
 #include "main_menu_window.hpp"
 #include "pdf_window.hpp"
+#include "load_from_image_window.hpp"
+#include "dithering_window.hpp"
 #include "canvas_renderer.hpp"
 #include "camera2d.hpp"
 #include "threads.hpp"
@@ -63,6 +65,12 @@ XStitchEditorApplication::XStitchEditorApplication() :
     pdf_window = new PDFWindow(this);
     pdf_window->initialise();
 
+    load_from_image_window = new LoadFromImageWindow(this);
+    load_from_image_window->initialise();
+
+    dithering_window = new DitheringWindow(this);
+    dithering_window->initialise();
+
     switch_application_state(ApplicationStates::LAUNCH);
 
     perform_layout();
@@ -101,41 +109,47 @@ void XStitchEditorApplication::switch_project(Project *project) {
     }
 }
 
+void XStitchEditorApplication::set_all_windows_invisible() {
+    std::vector<nanogui::Window*> all_windows{
+        tool_window, mouse_position_window, splashscreen_window,
+        new_project_window, main_menu_window, exit_to_main_menu_window,
+        pdf_window, load_from_image_window, dithering_window
+    };
+
+    for (auto window : all_windows) {
+        window->set_visible(false);
+    }
+}
+
 void XStitchEditorApplication::switch_application_state(ApplicationStates state) {
     if (_previous_state == ApplicationStates::PROJECT_OPEN) {
         main_menu_window->close_all_menus();
-        pdf_window->clear();
+        pdf_window->reset_form();
     }
 
     if (_previous_state == ApplicationStates::CREATE_PROJECT)
         new_project_window->reset_form();
 
+    if (_previous_state == ApplicationStates::CREATE_DITHERED_PROJECT)
+        dithering_window->reset_form();
+
     // Reposition all windows to default
     splashscreen_window->center();
     new_project_window->center();
+    load_from_image_window->center();
+    dithering_window->center();
     main_menu_window->position_top_left();
+
+    set_all_windows_invisible();
 
     switch (state) {
         case ApplicationStates::LAUNCH:
             splashscreen_window->set_visible(true);
-
-            tool_window->set_visible(false);
-            mouse_position_window->set_visible(false);
-            new_project_window->set_visible(false);
-            main_menu_window->set_visible(false);
-            exit_to_main_menu_window->set_visible(false);
-            pdf_window->set_visible(false);
             break;
 
         case ApplicationStates::CREATE_PROJECT:
             new_project_window->set_visible(true);
             exit_to_main_menu_window->set_visible(true);
-
-            splashscreen_window->set_visible(false);
-            tool_window->set_visible(false);
-            mouse_position_window->set_visible(false);
-            main_menu_window->set_visible(false);
-            pdf_window->set_visible(false);
             break;
 
         case ApplicationStates::PROJECT_OPEN:
@@ -144,14 +158,19 @@ void XStitchEditorApplication::switch_application_state(ApplicationStates state)
 
             main_menu_window->update_tool_toggle_icon();
             main_menu_window->update_minimap_toggle_icon();
+            break;
 
-            new_project_window->set_visible(false);
-            splashscreen_window->set_visible(false);
-            exit_to_main_menu_window->set_visible(false);
-            pdf_window->set_visible(false);
+        case ApplicationStates::CREATE_PROJECT_FROM_IMAGE:
+            load_from_image_window->set_visible(true);
+            exit_to_main_menu_window->set_visible(true);
             break;
 
         case ApplicationStates::CREATE_DITHERED_PROJECT:
+            dithering_window->set_visible(true);
+            exit_to_main_menu_window->set_visible(true);
+            break;
+
+        case ApplicationStates::CREATE_QUANTISED_PROJECT:
             // TODO
             break;
 
@@ -458,6 +477,8 @@ bool XStitchEditorApplication::mouse_motion_event(const Vector2i &p, const Vecto
 bool XStitchEditorApplication::resize_event(const nanogui::Vector2i &size) {
     splashscreen_window->center();
     new_project_window->center();
+    load_from_image_window->center();
+    dithering_window->center();
     pdf_window->center();
     main_menu_window->position_top_left();
     return true;

@@ -8,7 +8,7 @@ class PDFWindow : public nanogui::Window {
 public:
     PDFWindow(nanogui::Widget *parent) : _app((XStitchEditorApplication*)parent), nanogui::Window(parent, "PDF Wizard") {};
     void initialise();
-    void clear();
+    void reset_form();
     void save_pdf();
 
 private:

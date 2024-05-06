@@ -49,3 +49,4 @@ __pycache__/
 *.DS_Store
 *.oxs
 *.OXS
+*.pdf
