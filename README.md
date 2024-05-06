@@ -10,4 +10,4 @@ Install Cmake, and any build tools you need on your system to compile c++. Creat
 
 `make`
 
-NOTE: I have only tested the functionality of the GPU kernels for MacOS, specifically on an M1 machine. This application may not yet work as intended on other devices.
+NOTE: This code is only confirmed to be working on an intel Macbook, a M1 macbook and a Debian Linux computer. It may not function on a Windows PC.
