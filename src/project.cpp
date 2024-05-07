@@ -225,6 +225,10 @@ void Project::draw_stitch(Vector2i stitch, Thread *thread) {
     if (palette_index == -1)
         throw std::runtime_error("Thread provided is not in this project's palette");
 
+    draw_stitch(stitch, thread, palette_index);
+}
+
+void Project::draw_stitch(Vector2i stitch, Thread *thread, int palette_index) {
     thread_data[stitch[0]][stitch[1]] = palette_index;
 
     int index = index_3d(stitch, width);

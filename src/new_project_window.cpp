@@ -4,8 +4,7 @@
 #include "x_stitch_editor.hpp"
 #include "tool_window.hpp"
 #include "project.hpp"
-
-const nanogui::Color CANVAS_DEFAULT_COLOR = nanogui::Color(255, 255, 255, 255);
+#include "constants.hpp"
 
 void NewProjectWindow::initialise() {
     using namespace nanogui;

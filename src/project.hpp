@@ -45,11 +45,14 @@ struct Project
 
     std::string file_path;
 
+    // construct an empty project (throws std::invalid_argument if title, width or height are invalid)
     Project(std::string title_, int width_, int height_, nanogui::Color bg_color_);
     // construct a project using a .OXS file.
     Project(const char *project_path, std::map<std::string, std::map<std::string, Thread*>*> *threads);
     // Draws a single stitch to the canvas. Throws std::runtime_error if the thread provided is not in the project palette.
     void draw_stitch(nanogui::Vector2i stitch, Thread *thread);
+    // Draws a single stitch to the canvas. Doesn't check if the thread provided is in the project palette.
+    void draw_stitch(nanogui::Vector2i stitch, Thread *thread, int palette_index);
     // Erases a single stitch from the canvas.
     void erase_stitch(nanogui::Vector2i stitch);
     /* Fills an area with the thread specified.

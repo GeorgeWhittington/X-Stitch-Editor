@@ -1,6 +1,8 @@
 #pragma once
 #include <vector>
 #include <map>
+#include "threads.hpp"
+#include "project.hpp"
 
 struct RGBcolour {
     int R = -1;
@@ -11,6 +13,10 @@ struct RGBcolour {
         return R == rhs.R && G == rhs.G && B == rhs.B;
     };
 
+    bool operator==(const Thread& rhs) const {
+        return R == rhs.R && G == rhs.G && B == rhs.B;
+    }
+
     bool operator<(const RGBcolour& rhs) const {
         return R + G + B < rhs.R + rhs.G + rhs.B;
     }
@@ -18,34 +24,32 @@ struct RGBcolour {
 
 class DitheringAlgorithm {
 public:
-    DitheringAlgorithm(std::vector<RGBcolour> *palette) : _palette(*palette) {};
+    DitheringAlgorithm(std::vector<Thread*> *palette, int max_threads = INT_MAX) : _palette(palette), _max_threads(max_threads) {};
 
     // Finds the nearest colour from the available palette using a euclidian distance calculation
     // which is optimised using an internal cache
-    RGBcolour find_nearest_neighbour(RGBcolour colour);
+    Thread* find_nearest_neighbour(RGBcolour colour);
 
-    void set_palette(std::vector<RGBcolour> *palette);
+    virtual void dither(unsigned char *image, int width, int height, Project *project) = 0;
 
-    virtual void dither();
+protected:
+    int _max_threads;
 
 private:
-    std::map<RGBcolour, RGBcolour> _nearest_cache;
-    std::vector<RGBcolour> _palette;
+    std::map<RGBcolour, Thread*> _nearest_cache;
+    std::vector<Thread*> *_palette = nullptr;
 };
 
 class FloydSteinburg : DitheringAlgorithm {
 public:
-    FloydSteinburg(std::vector<RGBcolour> *palette) : DitheringAlgorithm(palette) {};
+    FloydSteinburg(std::vector<Thread*> *palette, int max_threads = INT_MAX) : DitheringAlgorithm(palette, max_threads) {};
 
-    virtual void dither();
+    virtual void dither(unsigned char *image, int width, int height, Project *project);
 };
 
 class Bayer : DitheringAlgorithm {
 public:
-    Bayer(std::vector<RGBcolour> *palette) : DitheringAlgorithm(palette) {};
+    Bayer(std::vector<Thread*> *palette, int max_threads = INT_MAX) : DitheringAlgorithm(palette, max_threads) {};
 
-    virtual void dither();
+    virtual void dither(unsigned char *image, int width, int height, Project *project);
 };
-
-// for bayer, you just apply the algorithm you would apply in the 1 bit greyscale case
-// to all three channels. Would assume apprx the same approach for floyd steinburg.

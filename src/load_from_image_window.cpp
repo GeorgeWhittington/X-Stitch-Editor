@@ -1,6 +1,11 @@
 #include "load_from_image_window.hpp"
 #include "constants.hpp"
 #include "x_stitch_editor.hpp"
+#include "dithering_window.hpp"
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_FAILURE_USERMSG
+#include "stb_image.h"
+#include <iostream>
 
 std::vector<std::pair<std::string, std::string>> permitted_image_files = {{"png", ""}, {"jpg", ""}, {"jpeg", ""}};
 
@@ -14,12 +19,19 @@ void LoadFromImageWindow::initialise() {
         if (path == "")
             return;
 
-        try {
-            auto image = new cimg_library::CImg<unsigned int>(path.c_str());
-            // TODO: _app->dithering_window->set_file(path);
+        // TODO: the image pointer returned can be later freed with stbi_image_free
+        int width, height, no_channels;
+        unsigned char *image = stbi_load(path.c_str(), &width, &height, &no_channels, 4);  // requesting 4 channels
+
+        if (image != nullptr) {
+            _app->dithering_window->set_input_image(image, width, height);
             _app->switch_application_state(ApplicationStates::CREATE_DITHERED_PROJECT);
-        } catch (const cimg_library::CImgIOException&) {
+        } else {
             // TODO: display error
+            // Use stbi_failure_reason() to get actual err msg?
+            // Will need to see if the messages with or without STBI_FAILURE_USERMSG
+            // are good enough to pass through directly to the user, or if a simple
+            // "error loading this image" msg is better. Probably one the former.
         }
     });
     button->set_font_size(30);
