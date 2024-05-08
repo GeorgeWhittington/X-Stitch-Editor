@@ -1,8 +1,13 @@
 #include "dithering_window.hpp"
 #include "x_stitch_editor.hpp"
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_FAILURE_USERMSG
 #include "stb_image.h"
 #include "dithering.hpp"
 #include "constants.hpp"
+#include <iostream>
+
+std::vector<std::pair<std::string, std::string>> permitted_image_files = {{"png", ""}, {"jpg", ""}, {"jpeg", ""}};
 
 void DitheringWindow::initialise() {
     using namespace nanogui;
@@ -34,11 +39,16 @@ void DitheringWindow::initialise() {
     _color_picker = new ColorPicker(form_widget, CANVAS_DEFAULT_COLOR);
 
     new Label(form_widget, "Algorithm:");
-    _algorithm_combobox = new ComboBox(form_widget, std::vector{std::string("Floyd-Steinburg"), std::string("Bayer")});
+    Widget *algorithm_widget = new Widget(form_widget);
+    algorithm_widget->set_layout(new BoxLayout(Orientation::Horizontal, Alignment::Fill, 0, 5));
+    _algorithm_combobox = new ComboBox(algorithm_widget, std::vector{std::string("Floyd-Steinburg"), std::string("Bayer"), std::string("Quantise")});
     _algorithm_combobox->set_callback([this](int index_selected) {
         _app->perform_layout();
     });
     _algorithm_combobox->set_fixed_width(200);
+    Button *algorithm_info_button = new Button(algorithm_widget, "", FA_INFO);
+    algorithm_info_button->set_tooltip("Different algorithms are more suited for different applications. For images that mostly contain flat colours and no gradients Quantising is suited. Floyd-Steinburg is good for conversion of photographs or other 'busy' images. Bayer has a distinct cross hatch style which is good for creating a retro effect.");
+    algorithm_info_button->set_enabled(false);
 
     new Label(form_widget, "Threads available:");
     Widget *palette_widget = new Widget(form_widget);
@@ -58,6 +68,8 @@ void DitheringWindow::initialise() {
         _app->perform_layout();
     });
 
+    // TODO: repace with slider that's range is from 0..total colours in selected palettes
+    // (this will obviously need adjusting once colour blending is implemented, not sure how)
     _max_threads_label = new Label(form_widget, "Maximum NO threads:");
     _max_threads_label->set_visible(false);
     _max_threads_intbox = new IntBox<int>(form_widget, 50);
@@ -84,6 +96,7 @@ void DitheringWindow::reset_form() {
     _errors->set_visible(false);
     _title_entry->set_value("");
     _color_picker->set_color(CANVAS_DEFAULT_COLOR);
+    // TODO: minimise colour_picker if it's left open (do same for create new project form)
     _algorithm_combobox->set_selected_index(0);
 
     nanogui::CheckBox *cb;
@@ -96,16 +109,37 @@ void DitheringWindow::reset_form() {
     _max_threads_label->set_visible(false);
     _max_threads_intbox->set_visible(false);
     _max_threads_intbox->set_value(50);
+
+    if (_image != nullptr) {
+        stbi_image_free(_image);
+        _image = nullptr;
+        _width = 0;
+        _height = 0;
+    }
 }
 
-void DitheringWindow::set_input_image(unsigned char *image, int width, int height) {
-    // Freeing just incase, ideally all exit points from the window would clear this first
-    if (_image != nullptr)
-        stbi_image_free(_image);
+void DitheringWindow::select_image() {
+    std::string path = nanogui::file_dialog(permitted_image_files, false);
+    if (path == "") {
+        _app->switch_application_state(ApplicationStates::LAUNCH);
+        return;
+    }
 
-    _image = image;
-    _width = width;
-    _height = height;
+    int no_channels;
+
+    // Freeing just incase, ideally all exit points from the window would clear this first
+    if (_image != nullptr) {
+        stbi_image_free(_image);
+        _image = nullptr;
+    }
+
+    _image = stbi_load(path.c_str(), &_width, &_height, &no_channels, 4); // requesting 4 channels
+
+    if (_image == nullptr) {
+        std::cout << "Error loading image: " << stbi_failure_reason() << std::endl;
+        // TODO: display error to user
+        _app->switch_application_state(ApplicationStates::LAUNCH);
+    }
 }
 
 void DitheringWindow::create_pattern() {
@@ -168,7 +202,11 @@ void DitheringWindow::create_pattern() {
     } else if (selected_algorithm == DitheringAlgorithms::BAYER) {
         Bayer bayer(&palette, max_threads);
         bayer.dither(_image, _width, _height, project);
+    } else if (selected_algorithm == DitheringAlgorithms::QUANTISE) {
+        NoDither no_dither(&palette, max_threads);
+        no_dither.dither(_image, _width, _height, project);
     } else {
+        delete project;
         _errors->set_visible(true);
         _errors->set_caption("The algorithm selected is not recognised, please try another");
         _app->perform_layout();
@@ -178,6 +216,7 @@ void DitheringWindow::create_pattern() {
     _app->switch_project(project);
     _app->switch_application_state(ApplicationStates::PROJECT_OPEN);
     stbi_image_free(_image);
+    _image = nullptr;
     _width = 0;
     _height = 0;
 }

@@ -18,7 +18,7 @@ struct RGBcolour {
     }
 
     bool operator<(const RGBcolour& rhs) const {
-        return R + G + B < rhs.R + rhs.G + rhs.B;
+        return std::tie(R, G, B) < std::tie(rhs.R, rhs.G, rhs.B);
     }
 };
 
@@ -37,6 +37,7 @@ protected:
 
 private:
     std::map<RGBcolour, Thread*> _nearest_cache;
+    // std::map<RGBcolour, Thread*> _nearest_cache;
     std::vector<Thread*> *_palette = nullptr;
 };
 
@@ -50,6 +51,13 @@ public:
 class Bayer : DitheringAlgorithm {
 public:
     Bayer(std::vector<Thread*> *palette, int max_threads = INT_MAX) : DitheringAlgorithm(palette, max_threads) {};
+
+    virtual void dither(unsigned char *image, int width, int height, Project *project);
+};
+
+class NoDither : DitheringAlgorithm {
+public:
+    NoDither(std::vector<Thread*> *palette, int max_threads = INT_MAX) : DitheringAlgorithm(palette, max_threads) {};
 
     virtual void dither(unsigned char *image, int width, int height, Project *project);
 };

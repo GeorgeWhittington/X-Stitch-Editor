@@ -13,7 +13,6 @@
 #include "new_project_window.hpp"
 #include "main_menu_window.hpp"
 #include "pdf_window.hpp"
-#include "load_from_image_window.hpp"
 #include "dithering_window.hpp"
 #include "canvas_renderer.hpp"
 #include "camera2d.hpp"
@@ -65,9 +64,6 @@ XStitchEditorApplication::XStitchEditorApplication() :
     pdf_window = new PDFWindow(this);
     pdf_window->initialise();
 
-    load_from_image_window = new LoadFromImageWindow(this);
-    load_from_image_window->initialise();
-
     dithering_window = new DitheringWindow(this);
     dithering_window->initialise();
 
@@ -113,7 +109,7 @@ void XStitchEditorApplication::set_all_windows_invisible() {
     std::vector<nanogui::Window*> all_windows{
         tool_window, mouse_position_window, splashscreen_window,
         new_project_window, main_menu_window, exit_to_main_menu_window,
-        pdf_window, load_from_image_window, dithering_window
+        pdf_window, dithering_window
     };
 
     for (auto window : all_windows) {
@@ -130,13 +126,12 @@ void XStitchEditorApplication::switch_application_state(ApplicationStates state)
     if (_previous_state == ApplicationStates::CREATE_PROJECT)
         new_project_window->reset_form();
 
-    if (_previous_state == ApplicationStates::CREATE_DITHERED_PROJECT)
+    if (_previous_state == ApplicationStates::CREATE_PROJECT_FROM_IMAGE)
         dithering_window->reset_form();
 
     // Reposition all windows to default
     splashscreen_window->center();
     new_project_window->center();
-    load_from_image_window->center();
     dithering_window->center();
     main_menu_window->position_top_left();
 
@@ -161,17 +156,8 @@ void XStitchEditorApplication::switch_application_state(ApplicationStates state)
             break;
 
         case ApplicationStates::CREATE_PROJECT_FROM_IMAGE:
-            load_from_image_window->set_visible(true);
-            exit_to_main_menu_window->set_visible(true);
-            break;
-
-        case ApplicationStates::CREATE_DITHERED_PROJECT:
             dithering_window->set_visible(true);
             exit_to_main_menu_window->set_visible(true);
-            break;
-
-        case ApplicationStates::CREATE_QUANTISED_PROJECT:
-            // TODO
             break;
 
         default:
@@ -477,7 +463,6 @@ bool XStitchEditorApplication::mouse_motion_event(const Vector2i &p, const Vecto
 bool XStitchEditorApplication::resize_event(const nanogui::Vector2i &size) {
     splashscreen_window->center();
     new_project_window->center();
-    load_from_image_window->center();
     dithering_window->center();
     pdf_window->center();
     main_menu_window->position_top_left();

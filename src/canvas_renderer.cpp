@@ -53,6 +53,9 @@ void CanvasRenderer::update_all_buffers() {
 
     upload_texture();
 
+    _v = 1.f;
+    _h = 1.f;
+
     if (width > height) {
         _v = (float)height / (float)width;
     } else {

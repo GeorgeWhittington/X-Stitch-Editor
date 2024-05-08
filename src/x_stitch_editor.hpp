@@ -26,7 +26,6 @@ class SplashScreenWindow;
 class NewProjectWindow;
 class MainMenuWindow;
 class PDFWindow;
-class LoadFromImageWindow;
 class DitheringWindow;
 class CanvasRenderer;
 struct Project;
@@ -66,7 +65,6 @@ public:
     MainMenuWindow *main_menu_window;
     ExitToMainMenuWindow *exit_to_main_menu_window;
     PDFWindow *pdf_window;
-    LoadFromImageWindow *load_from_image_window;
     DitheringWindow *dithering_window;
 
     CanvasRenderer *_canvas_renderer = nullptr;

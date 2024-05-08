@@ -8,6 +8,7 @@
 #include "tool_window.hpp"
 #include "pdf_window.hpp"
 #include "project.hpp"
+#include "dithering_window.hpp"
 
 using nanogui::Vector2i;
 
@@ -127,6 +128,7 @@ void MainMenuWindow::new_project_from_image() {
 
         _app->switch_project(nullptr);
         _app->switch_application_state(ApplicationStates::CREATE_PROJECT_FROM_IMAGE);
+        _app->dithering_window->select_image();
     });
 }
 

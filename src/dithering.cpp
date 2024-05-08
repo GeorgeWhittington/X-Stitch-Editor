@@ -1,6 +1,7 @@
 #include "dithering.hpp"
 #include <set>
 #include <nanogui/nanogui.h>
+#include <iostream>
 
 #define INDEX(x, y, width) (x + (width * y))
 #define FS_ERR_RIGHT      0.4375f // 7/16
@@ -11,11 +12,6 @@
 RGBcolour BLANK_COLOUR = RGBcolour{};
 
 Thread* DitheringAlgorithm::find_nearest_neighbour(RGBcolour needle) {
-    // Clamp input to 0..255
-    needle = RGBcolour{std::clamp(needle.R, 0, 255),
-                       std::clamp(needle.G, 0, 255),
-                       std::clamp(needle.B, 0, 255)};
-
     // First check cache
     Thread *match;
     try {
@@ -42,20 +38,13 @@ Thread* DitheringAlgorithm::find_nearest_neighbour(RGBcolour needle) {
     return match;
 };
 
-// for bayer, you just apply the algorithm you would apply in the 1 bit greyscale case
-// to all three channels. Would assume apprx the same approach for floyd steinburg.
-
-RGBcolour image_ptr_to_colour(unsigned char *image_ptr) {
-    return RGBcolour{*image_ptr, *(image_ptr+1), *(image_ptr+2)};
-}
-
 void apply_quant_error(int err_R, int err_G, int err_B, int *quant_error_ptr, int x, int y, int width, int height, float coefficient) {
     // check bounds
     if (x >= width || y >= height)
         return;
 
     // apply offset
-    quant_error_ptr += INDEX(x, y, width);
+    quant_error_ptr += 3 * INDEX(x, y, width);
 
     // add error
     *quant_error_ptr += err_R * coefficient;
@@ -65,24 +54,34 @@ void apply_quant_error(int err_R, int err_G, int err_B, int *quant_error_ptr, in
 
 void FloydSteinburg::dither(unsigned char *image, int width, int height, Project *project) {
     int *quant_error = new int[width * height * 3];
-    memset(quant_error, 0, width * height * 3); // initalize quant_error to 0
+    for (int i = 0; i < width * height * 3; i++) {
+        quant_error[i] = 0;
+    }
 
     int i;
+    int q_i;
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            i = INDEX(x, y, width);
+            i = 4 * INDEX(x, y, width);
+            q_i = 3 * INDEX(x, y, width);
             // It would be ideal to smartly handle opacity. Do not have time
             // to do this. Any areas that are 100% transparent are blank,
             // any other opacity level is treated as 100% opaque.
             if ((int)image[i+3] == 0)
                 continue;
 
-            // Fetch pixel, apply any quant error, then find the nearest neighbour.
-            RGBcolour old_pixel = image_ptr_to_colour(image + i);
-            old_pixel = RGBcolour{old_pixel.R + quant_error[i],
-                                  old_pixel.R + quant_error[i+1],
-                                  old_pixel.R + quant_error[i+2]};
+            // Clamp to 0..255
+            RGBcolour old_pixel = RGBcolour{
+                std::clamp(image[i] + quant_error[q_i], 0, 255),
+                std::clamp(image[i+1] + quant_error[q_i+1], 0, 255),
+                std::clamp(image[i+2] + quant_error[q_i+2], 0, 255)
+            };
             Thread *new_pixel = find_nearest_neighbour(old_pixel);
+
+            // std::cout << "image        : " << (int)image[i] << " " << (int)image[i+1] << " " << (int)image[i+2] << std::endl;
+            // std::cout << "image + quant: " << (int)(image[i] + quant_error[q_i]) << " " << (int)(image[i+1] + quant_error[q_i+1]) << " " << (int)(image[i+2] + quant_error[q_i+2]) << std::endl;
+            // std::cout << "input clamped: " << std::clamp(image[i] + quant_error[q_i], 0, 255) << " " << std::clamp(image[i+1] + quant_error[q_i+1], 0, 255) << " " << std::clamp(image[i+2] + quant_error[q_i+2], 0, 255) << std::endl;
+            // std::cout << "output       : " << new_pixel->R << " " << new_pixel->G << " " << new_pixel->B << std::endl << std::endl;
 
             // Find the quantisation error and spread it across neighbouring pixels.
             int err_R = old_pixel.R - new_pixel->R;
@@ -101,14 +100,14 @@ void FloydSteinburg::dither(unsigned char *image, int width, int height, Project
             bool drawn = false;
             for (int j = 0; j < project->palette.size(); j++) {
                 if (project->palette[j] == new_pixel) {
-                    project->draw_stitch(nanogui::Vector2i(x, y), new_pixel, j);
+                    project->draw_stitch(nanogui::Vector2i(x, height - y - 1), new_pixel, j);
                     drawn = true;
                     break;
                 }
             }
             if (!drawn) {
                 project->palette.push_back(new_pixel);
-                project->draw_stitch(nanogui::Vector2i(x, y), new_pixel, project->palette.size() - 1);
+                project->draw_stitch(nanogui::Vector2i(x, height - y - 1), new_pixel, project->palette.size() - 1);
             }
         }
     }
@@ -118,4 +117,34 @@ void FloydSteinburg::dither(unsigned char *image, int width, int height, Project
 
 void Bayer::dither(unsigned char *image, int width, int height, Project *project) {
     // TODO
+}
+
+void NoDither::dither(unsigned char *image, int width, int height, Project *project) {
+    int i;
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            i = 4 * INDEX(x, y, width);
+            // It would be ideal to smartly handle opacity. Do not have time
+            // to do this. Any areas that are 100% transparent are blank,
+            // any other opacity level is treated as 100% opaque.
+            if ((int)image[i+3] == 0)
+                continue;
+
+            Thread *new_pixel = find_nearest_neighbour(RGBcolour{image[i], image[i+1], image[i+2]});
+
+            // Write to output image
+            bool drawn = false;
+            for (int j = 0; j < project->palette.size(); j++) {
+                if (project->palette[j] == new_pixel) {
+                    project->draw_stitch(nanogui::Vector2i(x, height - y - 1), new_pixel, j);
+                    drawn = true;
+                    break;
+                }
+            }
+            if (!drawn) {
+                project->palette.push_back(new_pixel);
+                project->draw_stitch(nanogui::Vector2i(x, height - y - 1), new_pixel, project->palette.size() - 1);
+            }
+        }
+    }
 }

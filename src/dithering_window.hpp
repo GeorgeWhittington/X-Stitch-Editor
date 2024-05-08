@@ -5,7 +5,8 @@ class XStitchEditorApplication;
 
 enum DitheringAlgorithms {
     FLOYD_STEINBURG,
-    BAYER
+    BAYER,
+    QUANTISE
 };
 
 class DitheringWindow : public nanogui::Window {
@@ -13,7 +14,7 @@ public:
     DitheringWindow(nanogui::Widget *parent) : _app((XStitchEditorApplication*)parent), nanogui::Window(parent, "") {};
     void initialise();
     void reset_form();
-    void set_input_image(unsigned char *image, int width, int height);
+    void select_image();
 
 private:
     void create_pattern();

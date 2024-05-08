@@ -3,6 +3,7 @@
 #include "splashscreen_window.hpp"
 #include "x_stitch_editor.hpp"
 #include "new_project_window.hpp"
+#include "dithering_window.hpp"
 #include "project.hpp"
 
 void SplashScreenWindow::initialise() {
@@ -20,6 +21,7 @@ void SplashScreenWindow::initialise() {
     button->set_callback([this](){
         XStitchEditorApplication* app = (XStitchEditorApplication*) m_parent;
         app->switch_application_state(ApplicationStates::CREATE_PROJECT_FROM_IMAGE);
+        app->dithering_window->select_image();
     });
     button->set_font_size(30);
 
