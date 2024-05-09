@@ -28,6 +28,9 @@ private:
     nanogui::Button *_aspect_ratio_button;
     nanogui::ColorPicker *_color_picker;
     nanogui::ComboBox *_algorithm_combobox;
+    nanogui::Label *_matrix_size_label;
+    nanogui::Widget *_matrix_size_widget;
+    nanogui::ComboBox *_matrix_size_combobox;
     std::vector<nanogui::CheckBox*> _palette_checkboxes;
     nanogui::CheckBox *_enable_max_threads_checkbox;
     nanogui::Label *_max_threads_label;

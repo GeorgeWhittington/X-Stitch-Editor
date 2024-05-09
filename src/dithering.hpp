@@ -8,6 +8,13 @@
 #define THRESHOLD_COLOUR 0.64f
 #define THRESHOLD_GREYSCALE 1.f
 
+enum BayerOrders {
+    TWO = 2U,
+    FOUR = 4U,
+    EIGHT = 8U,
+    SIXTEEN = 16U
+};
+
 struct RGBcolour {
     int R = -1;
     int G = -1;
@@ -37,9 +44,11 @@ public:
 protected:
     int _max_threads;
 
+    void set_palette(std::vector<Thread*> *new_palette);
+    void reduce_palette(int width, int height, Project *project, std::vector<Thread*> *new_palette);
+
 private:
     std::map<RGBcolour, Thread*> _nearest_cache;
-    // std::map<RGBcolour, Thread*> _nearest_cache;
     std::vector<Thread*> *_palette = nullptr;
 };
 
@@ -48,12 +57,15 @@ public:
     FloydSteinburg(std::vector<Thread*> *palette, int max_threads = INT_MAX) : DitheringAlgorithm(palette, max_threads) {};
 
     void dither(unsigned char *image, int width, int height, Project *project);
+
+private:
+    void apply_quant_error(int err_R, int err_G, int err_B, int *quant_error_ptr, int x, int y, int width, int height, float coefficient);
 };
 
-template <uint ORDER = 4>
+template <uint ORDER = 4U>
 class Bayer : DitheringAlgorithm {
 public:
-    Bayer(std::vector<Thread*> *palette, int max_threads = INT_MAX, bool greyscale = false) : DitheringAlgorithm(palette, max_threads), _greyscale(greyscale) {
+    Bayer(std::vector<Thread*> *palette, int max_threads = INT_MAX) : DitheringAlgorithm(palette, max_threads) {
         int BAYER2x2[2][2] = {
             {0, 2},
             {3, 1}
@@ -93,34 +105,32 @@ public:
             {169, 106, 153,  90, 165, 102, 149,  86, 168, 105, 152,  89, 164, 101, 148,  85}
         };
 
-        float strength = greyscale ? THRESHOLD_GREYSCALE : THRESHOLD_COLOUR;
-
         switch (ORDER) {
-        case 2:
+        case BayerOrders::TWO:
             for (int i = 0; i < ORDER; i++) {
                 for (int j = 0; j < ORDER; j++) {
-                    _matrix[i][j] = strength * BAYER2x2[i][j];
+                    _matrix[i][j] = THRESHOLD_COLOUR * BAYER2x2[i][j];
                 }
             }
             break;
-        case 4:
+        case BayerOrders::FOUR:
             for (int i = 0; i < ORDER; i++) {
                 for (int j = 0; j < ORDER; j++) {
-                    _matrix[i][j] = strength * BAYER4x4[i][j];
+                    _matrix[i][j] = THRESHOLD_COLOUR * BAYER4x4[i][j];
                 }
             }
             break;
-        case 8:
+        case BayerOrders::EIGHT:
             for (int i = 0; i < ORDER; i++) {
                 for (int j = 0; j < ORDER; j++) {
-                    _matrix[i][j] = strength * BAYER8x8[i][j];
+                    _matrix[i][j] = THRESHOLD_COLOUR * BAYER8x8[i][j];
                 }
             }
             break;
-        case 16:
+        case BayerOrders::SIXTEEN:
             for (int i = 0; i < ORDER; i++) {
                 for (int j = 0; j < ORDER; j++) {
-                    _matrix[i][j] = strength * BAYER16x16[i][j];
+                    _matrix[i][j] = THRESHOLD_COLOUR * BAYER16x16[i][j];
                 }
             }
             break;
@@ -134,7 +144,6 @@ public:
     void dither(unsigned char *image, int width, int height, Project *project);
 
 private:
-    bool _greyscale;
     int _matrix[ORDER][ORDER];
 };
 

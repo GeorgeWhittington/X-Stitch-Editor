@@ -26,14 +26,15 @@ void DitheringWindow::initialise() {
     layout->set_row_alignment(std::vector{Alignment::Middle, Alignment::Minimum});
     form_widget->set_layout(layout);
 
+    // TITLE
     new Label(form_widget, "Project title:");
     _title_entry = new TextBox(form_widget, "");
     _title_entry->set_editable(true);
     _title_entry->set_alignment(TextBox::Alignment::Left);
 
+    // DIMENSIONS
     new Label(form_widget, "Project dimensions:");
     Widget *dimensions_widget = new Widget(form_widget);
-
     Label *width_label = new Label(dimensions_widget, "Width:");
     _width_intbox = new IntBox(dimensions_widget, 0);
     _width_intbox->set_callback([this](int width) {
@@ -52,9 +53,8 @@ void DitheringWindow::initialise() {
         float ratio = (float)_width / (float)_height;
         _width_intbox->set_value(height * ratio);
     });
-
     for (auto intbox : {_width_intbox, _height_intbox}) {
-        intbox->set_fixed_width(138);
+        intbox->set_fixed_width(142);
         intbox->set_units("stitches");
     }
 
@@ -67,30 +67,59 @@ void DitheringWindow::initialise() {
         _height_intbox->set_value(_height);
     });
 
+    using Anchor = AdvancedGridLayout::Anchor;
     AdvancedGridLayout *dimensions_layout = new AdvancedGridLayout(std::vector{0, 5, 0, 5, 0}, std::vector{0, 5, 0}, 0);
     dimensions_widget->set_layout(dimensions_layout);
-    dimensions_layout->set_anchor(width_label, AdvancedGridLayout::Anchor(0, 0, Alignment::Minimum, Alignment::Middle));
-    dimensions_layout->set_anchor(_width_intbox, AdvancedGridLayout::Anchor(2, 0, Alignment::Fill, Alignment::Fill));
-    dimensions_layout->set_anchor(height_label, AdvancedGridLayout::Anchor(0, 2, Alignment::Minimum, Alignment::Middle));
-    dimensions_layout->set_anchor(_height_intbox, AdvancedGridLayout::Anchor(2, 2, Alignment::Fill, Alignment::Fill));
-    dimensions_layout->set_anchor(_aspect_ratio_button, AdvancedGridLayout::Anchor(4, 0, Alignment::Minimum, Alignment::Fill));
-    dimensions_layout->set_anchor(reset_dimensions_button, AdvancedGridLayout::Anchor(4, 2, Alignment::Minimum, Alignment::Fill));
+    dimensions_layout->set_anchor(width_label, Anchor(0, 0));
+    dimensions_layout->set_anchor(_width_intbox, Anchor(2, 0));
+    dimensions_layout->set_anchor(height_label, Anchor(0, 2));
+    dimensions_layout->set_anchor(_height_intbox, Anchor(2, 2));
+    dimensions_layout->set_anchor(_aspect_ratio_button, Anchor(4, 0));
+    dimensions_layout->set_anchor(reset_dimensions_button, Anchor(4, 2));
 
+    // CANVAS BACKGROUND COLOUR
     new Label(form_widget, "Canvas background colour:");
     _color_picker = new ColorPicker(form_widget, CANVAS_DEFAULT_COLOR);
 
+    // ALGORITHM
     new Label(form_widget, "Algorithm:");
     Widget *algorithm_widget = new Widget(form_widget);
     algorithm_widget->set_layout(new BoxLayout(Orientation::Horizontal, Alignment::Fill, 0, 5));
-    _algorithm_combobox = new ComboBox(algorithm_widget, std::vector{std::string("Floyd-Steinburg"), std::string("Bayer"), std::string("Quantise")});
+    _algorithm_combobox = new ComboBox(algorithm_widget, std::vector<std::string>{"Floyd-Steinburg", "Bayer", "Quantise"});
     _algorithm_combobox->set_callback([this](int index_selected) {
         _app->perform_layout();
+        if (index_selected == DitheringAlgorithms::BAYER) {
+            _matrix_size_label->set_visible(true);
+            _matrix_size_widget->set_visible(true);
+            _app->perform_layout();
+        } else if (_matrix_size_label->visible() || _matrix_size_widget->visible()) {
+            _matrix_size_label->set_visible(false);
+            _matrix_size_widget->set_visible(false);
+            _app->perform_layout();
+        }
     });
     _algorithm_combobox->set_fixed_width(200);
     Button *algorithm_info_button = new Button(algorithm_widget, "", FA_INFO);
     algorithm_info_button->set_tooltip("Different algorithms are more suited for different applications. For images that mostly contain flat colours and no gradients Quantising is suited. Floyd-Steinburg is good for conversion of photographs or other 'busy' images. Bayer has a distinct cross hatch style which is good for creating a retro effect.");
     algorithm_info_button->set_enabled(false);
 
+    // THRESHOLD MATRIX
+    _matrix_size_label = new Label(form_widget, "Matrix Size:");
+    _matrix_size_widget = new Widget(form_widget);
+    _matrix_size_widget->set_layout(new BoxLayout(Orientation::Horizontal, Alignment::Fill, 0, 5));
+    _matrix_size_combobox = new ComboBox(_matrix_size_widget, std::vector<std::string>{"2", "4", "8", "16"});
+    _matrix_size_combobox->set_selected_index(1);
+    _matrix_size_combobox->set_callback([this](int index_selected) { _app->perform_layout(); });
+    _matrix_size_combobox->set_fixed_width(200);
+    Button *matrix_info_button = new Button(_matrix_size_widget, "", FA_INFO);
+    matrix_info_button->set_tooltip("This setting controls the size of the threshold matrix used to perform Bayer dithering. As the matrix size increases, the resulting image will become brighter. Banding will be quite noticeable at size 2, and the patterns are most recognisable at size 4.");
+    matrix_info_button->set_enabled(false);
+    // Have to do this in a strange order to make sure info button is sized correctly
+    _app->perform_layout();
+    _matrix_size_label->set_visible(false);
+    _matrix_size_widget->set_visible(false);
+
+    // PALETTE
     new Label(form_widget, "Threads available:");
     Widget *palette_widget = new Widget(form_widget);
     palette_widget->set_layout(new BoxLayout(Orientation::Vertical, Alignment::Fill, 0, 5));
@@ -101,6 +130,7 @@ void DitheringWindow::initialise() {
     if (first != nullptr)
         first->set_checked(true);
 
+    // ENABLE MAX THREADS
     new Label(form_widget, "Enable setting a maximum NO threads:");
     _enable_max_threads_checkbox = new CheckBox(form_widget, "");
     _enable_max_threads_checkbox->set_callback([this](bool checked) {
@@ -109,6 +139,7 @@ void DitheringWindow::initialise() {
         _app->perform_layout();
     });
 
+    // MAX THREADS
     // TODO: repace with slider that's range is from 0..total colours in selected palettes
     // (this will obviously need adjusting once colour blending is implemented, not sure how)
     _max_threads_label = new Label(form_widget, "Maximum NO threads:");
@@ -141,8 +172,11 @@ void DitheringWindow::reset_form() {
     _title_entry->set_value("");
     _aspect_ratio_button->set_pushed(true);
     _color_picker->set_color(CANVAS_DEFAULT_COLOR);
-    // TODO: minimise colour_picker if it's left open (do same for create new project form)
+    _color_picker->set_pushed(false);
     _algorithm_combobox->set_selected_index(0);
+    _matrix_size_label->set_visible(false);
+    _matrix_size_widget->set_visible(false);
+    _matrix_size_combobox->set_selected_index(1);
 
     nanogui::CheckBox *cb;
     for (int i = 0; i < _palette_checkboxes.size(); i++) {
@@ -267,8 +301,26 @@ void DitheringWindow::create_pattern() {
         FloydSteinburg floyd_steinburg(&palette, max_threads);
         floyd_steinburg.dither(_image, _width, _height, project);
     } else if (selected_algorithm == DitheringAlgorithms::BAYER) {
-        Bayer bayer(&palette, max_threads);
-        bayer.dither(_image, _width, _height, project);
+        int selected_matrix = _matrix_size_combobox->selected_index();
+        if (selected_matrix == 0) {
+            Bayer<BayerOrders::TWO> bayer(&palette, max_threads);
+            bayer.dither(_image, _width, _height, project);
+        } else if (selected_matrix == 1) {
+            Bayer<BayerOrders::FOUR> bayer(&palette, max_threads);
+            bayer.dither(_image, _width, _height, project);
+        } else if (selected_matrix == 2) {
+            Bayer<BayerOrders::EIGHT> bayer(&palette, max_threads);
+            bayer.dither(_image, _width, _height, project);
+        } else if (selected_matrix == 3) {
+            Bayer<BayerOrders::SIXTEEN> bayer(&palette, max_threads);
+            bayer.dither(_image, _width, _height, project);
+        } else {
+            delete project;
+            _errors->set_visible(true);
+            _errors->set_caption("The matrix size selected is not recognised, please try another");
+            _app->perform_layout();
+            return;
+        }
     } else if (selected_algorithm == DitheringAlgorithms::QUANTISE) {
         NoDither no_dither(&palette, max_threads);
         no_dither.dither(_image, _width, _height, project);

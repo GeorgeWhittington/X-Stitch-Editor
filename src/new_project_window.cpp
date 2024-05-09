@@ -81,4 +81,5 @@ void NewProjectWindow::reset_form() {
     _width_entry->set_value(100);
     _height_entry->set_value(100);
     _color_picker->set_color(CANVAS_DEFAULT_COLOR);
+    _color_picker->set_pushed(false);
 }

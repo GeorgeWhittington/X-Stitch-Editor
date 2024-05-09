@@ -169,7 +169,7 @@ void ToolWindow::set_palette() {
     }
 
     if (threads.size() > 10)
-        _palette_container->set_fixed_height(470);
+        _palette_container->set_fixed_height(370);
 
     app->perform_layout();
 };

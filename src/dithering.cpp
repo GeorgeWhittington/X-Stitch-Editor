@@ -46,7 +46,40 @@ Thread* DitheringAlgorithm::find_nearest_neighbour(RGBcolour needle) {
     return match;
 };
 
-void apply_quant_error(int err_R, int err_G, int err_B, int *quant_error_ptr, int x, int y, int width, int height, float coefficient) {
+
+
+void DitheringAlgorithm::set_palette(std::vector<Thread*> *new_palette) {
+    // Find threads removed from the new palette
+    std::vector<Thread*> difference;
+    std::sort(_palette->begin(), _palette->end());
+    std::sort(new_palette->begin(), new_palette->end());
+    std::set_symmetric_difference(
+        _palette->begin(), _palette->end(),
+        new_palette->begin(), new_palette->end(),
+        std::back_inserter(difference)
+    );
+
+    // Remove any cache values that aren't in the new palette
+    for (auto it = _nearest_cache.cbegin(); it != _nearest_cache.cend(); /* no increment */){
+        bool must_delete = false;
+        for (auto thread : difference) {
+            if (thread == it->second) {
+                must_delete = true;
+                break;
+            }
+        }
+
+        if (must_delete) {
+            it = _nearest_cache.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    _palette = new_palette;
+}
+
+void FloydSteinburg::apply_quant_error(int err_R, int err_G, int err_B, int *quant_error_ptr, int x, int y, int width, int height, float coefficient) {
     // check bounds
     if (x >= width || y >= height)
         return;
@@ -144,6 +177,51 @@ void NoDither::dither(unsigned char *image, int width, int height, Project *proj
                 project->palette.push_back(new_pixel);
                 project->draw_stitch(nanogui::Vector2i(x, height - y - 1), new_pixel, project->palette.size() - 1);
             }
+        }
+    }
+
+    if (project->palette.size() > _max_threads) {
+        std::vector<Thread*> new_palette;
+        reduce_palette(width, height, project, &new_palette);
+        dither(image, width, height, project);
+    }
+}
+
+void DitheringAlgorithm::reduce_palette(int width, int height, Project *project, std::vector<Thread*> *new_palette) {
+    // Count selected threads
+    std::map<int, int> thread_counts;
+    for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+            int thread_index = project->thread_data[x][y];
+            auto it = thread_counts.find(thread_index);
+            if (it != thread_counts.end()) {
+                it->second++;
+            } else {
+                thread_counts[thread_index] = 1;
+            }
+        }
+    }
+    std::map<int, int> reversed_thread_counts;
+    for (auto const& [key, val] : thread_counts)
+        reversed_thread_counts[val] = key;
+
+    // Construct new palette from the most popular colours
+    // TODO: this is painfully naive, will almost certainly need to be more complex than this
+    for (auto iter = reversed_thread_counts.rbegin(); iter != reversed_thread_counts.rend(); ++iter) {
+        new_palette->push_back(project->palette[iter->second]);
+        if (new_palette->size() == _max_threads)
+            break;
+    }
+    set_palette(new_palette);
+
+    // Clear all data written to project
+    project->palette.clear();
+    for (int i = 0; i < width * height * 4; i++) {
+        project->texture_data_array[i] = 255;
+    }
+    for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+            project->thread_data[x][y] = -1;
         }
     }
 }
