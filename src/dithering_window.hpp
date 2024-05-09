@@ -23,6 +23,9 @@ private:
 
     nanogui::Label *_errors;
     nanogui::TextBox *_title_entry;
+    nanogui::IntBox<int> *_width_intbox;
+    nanogui::IntBox<int> *_height_intbox;
+    nanogui::Button *_aspect_ratio_button;
     nanogui::ColorPicker *_color_picker;
     nanogui::ComboBox *_algorithm_combobox;
     std::vector<nanogui::CheckBox*> _palette_checkboxes;

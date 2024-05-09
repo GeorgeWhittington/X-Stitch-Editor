@@ -3,6 +3,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_FAILURE_USERMSG
 #include "stb_image.h"
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "stb_image_resize2.h"
 #include "dithering.hpp"
 #include "constants.hpp"
 #include <iostream>
@@ -29,11 +31,50 @@ void DitheringWindow::initialise() {
     _title_entry->set_editable(true);
     _title_entry->set_alignment(TextBox::Alignment::Left);
 
-    // TODO: option to select how to resize the selected image.
-    // Would be nice to do this smartly:
-    // * separate width and height inputs
-    // * link icon button that lets you lock asp ratio, and then edits to one axis influence the other
-    // * probably lay them out in a specific widget, one under the other with the asp ratio button in the right column
+    new Label(form_widget, "Project dimensions:");
+    Widget *dimensions_widget = new Widget(form_widget);
+
+    Label *width_label = new Label(dimensions_widget, "Width:");
+    _width_intbox = new IntBox(dimensions_widget, 0);
+    _width_intbox->set_callback([this](int width) {
+        if (!_aspect_ratio_button->pushed())
+            return;
+
+        float ratio = (float)_height / (float)_width;
+        _height_intbox->set_value(width * ratio);
+    });
+    Label *height_label = new Label(dimensions_widget, "Height:");
+    _height_intbox = new IntBox(dimensions_widget, 0);
+    _height_intbox->set_callback([this](int height) {
+        if (!_aspect_ratio_button->pushed())
+            return;
+
+        float ratio = (float)_width / (float)_height;
+        _width_intbox->set_value(height * ratio);
+    });
+
+    for (auto intbox : {_width_intbox, _height_intbox}) {
+        intbox->set_fixed_width(138);
+        intbox->set_units("stitches");
+    }
+
+    _aspect_ratio_button = new Button(dimensions_widget, "", FA_LINK);
+    _aspect_ratio_button->set_flags(Button::ToggleButton);
+    _aspect_ratio_button->set_pushed(true);
+    Button *reset_dimensions_button = new Button(dimensions_widget, "", FA_UNDO);
+    reset_dimensions_button->set_callback([this]() {
+        _width_intbox->set_value(_width);
+        _height_intbox->set_value(_height);
+    });
+
+    AdvancedGridLayout *dimensions_layout = new AdvancedGridLayout(std::vector{0, 5, 0, 5, 0}, std::vector{0, 5, 0}, 0);
+    dimensions_widget->set_layout(dimensions_layout);
+    dimensions_layout->set_anchor(width_label, AdvancedGridLayout::Anchor(0, 0, Alignment::Minimum, Alignment::Middle));
+    dimensions_layout->set_anchor(_width_intbox, AdvancedGridLayout::Anchor(2, 0, Alignment::Fill, Alignment::Fill));
+    dimensions_layout->set_anchor(height_label, AdvancedGridLayout::Anchor(0, 2, Alignment::Minimum, Alignment::Middle));
+    dimensions_layout->set_anchor(_height_intbox, AdvancedGridLayout::Anchor(2, 2, Alignment::Fill, Alignment::Fill));
+    dimensions_layout->set_anchor(_aspect_ratio_button, AdvancedGridLayout::Anchor(4, 0, Alignment::Minimum, Alignment::Fill));
+    dimensions_layout->set_anchor(reset_dimensions_button, AdvancedGridLayout::Anchor(4, 2, Alignment::Minimum, Alignment::Fill));
 
     new Label(form_widget, "Canvas background colour:");
     _color_picker = new ColorPicker(form_widget, CANVAS_DEFAULT_COLOR);
@@ -73,12 +114,15 @@ void DitheringWindow::initialise() {
     _max_threads_label = new Label(form_widget, "Maximum NO threads:");
     _max_threads_label->set_visible(false);
     _max_threads_intbox = new IntBox<int>(form_widget, 50);
-    _max_threads_intbox->set_min_value(1);
-    _max_threads_intbox->set_editable(true);
-    _max_threads_intbox->set_spinnable(true);
     _max_threads_intbox->set_default_value("50");
     _max_threads_intbox->set_visible(false);
-    _max_threads_intbox->set_alignment(TextBox::Alignment::Left);
+
+    for (auto intbox : {_width_intbox, _height_intbox, _max_threads_intbox}) {
+        intbox->set_editable(true);
+        intbox->set_spinnable(true);
+        intbox->set_alignment(TextBox::Alignment::Left);
+        intbox->set_min_value(1);
+    }
 
     Button *button = new Button(this, "Create pattern");
     button->set_callback([this]() {
@@ -95,6 +139,7 @@ void DitheringWindow::initialise() {
 void DitheringWindow::reset_form() {
     _errors->set_visible(false);
     _title_entry->set_value("");
+    _aspect_ratio_button->set_pushed(true);
     _color_picker->set_color(CANVAS_DEFAULT_COLOR);
     // TODO: minimise colour_picker if it's left open (do same for create new project form)
     _algorithm_combobox->set_selected_index(0);
@@ -140,6 +185,11 @@ void DitheringWindow::select_image() {
         // TODO: display error to user
         _app->switch_application_state(ApplicationStates::LAUNCH);
     }
+
+    _width_intbox->set_value(_width);
+    _width_intbox->set_default_value(std::to_string(_width));
+    _height_intbox->set_value(_height);
+    _height_intbox->set_default_value(std::to_string(_height));
 }
 
 void DitheringWindow::create_pattern() {
@@ -184,7 +234,7 @@ void DitheringWindow::create_pattern() {
     Project *project;
 
     try {
-        project = new Project(_title_entry->value(), _width, _height, _color_picker->color());
+        project = new Project(_title_entry->value(), _width_intbox->value(), _height_intbox->value(), _color_picker->color());
     } catch (const std::invalid_argument& err) {
         _errors->set_caption(err.what());
         _errors->set_visible(true);
@@ -192,9 +242,26 @@ void DitheringWindow::create_pattern() {
         return;
     }
 
-    // TODO: once resizing is added, the image, width and height passed in will need to
-    // depend on whether the user alters the dimensions of the image. That will happen just
-    // before this step here
+    // Resizing image if necessary
+    int user_width = _width_intbox->value();
+    int user_height = _height_intbox->value();
+    if (_width != user_width || _height != user_height) {
+        unsigned char *resized_image = stbir_resize_uint8_srgb(_image, _width, _height, 0, NULL, user_width, user_height, 0, stbir_pixel_layout::STBIR_RGBA);
+
+        if (resized_image != nullptr) {
+            stbi_image_free(_image);
+            _image = resized_image;
+            _width = user_width;
+            _height = user_height;
+        } else {
+            _errors->set_visible(true);
+            _errors->set_caption("Error resizing image");
+            _app->perform_layout();
+            // TODO: Figure out where error codes are fetched so that we can log that data
+            return;
+        }
+    }
+
     int selected_algorithm = _algorithm_combobox->selected_index();
     if (selected_algorithm == DitheringAlgorithms::FLOYD_STEINBURG) {
         FloydSteinburg floyd_steinburg(&palette, max_threads);
