@@ -8,6 +8,9 @@
 #include "dithering.hpp"
 #include "constants.hpp"
 #include <iostream>
+#include <chrono>
+
+using namespace std::chrono;
 
 std::vector<std::pair<std::string, std::string>> permitted_image_files = {{"png", ""}, {"jpg", ""}, {"jpeg", ""}};
 
@@ -77,6 +80,10 @@ void DitheringWindow::initialise() {
     dimensions_layout->set_anchor(_aspect_ratio_button, Anchor(4, 0));
     dimensions_layout->set_anchor(reset_dimensions_button, Anchor(4, 2));
 
+    // TODO: Add control for upscaling algorithm (bicubic, point sample)
+    // should only appear if user has selected dimensions greater than the input image
+    // (STBIR_FILTER_DEFAULT, STBIR_FILTER_POINT_SAMPLE)
+
     // CANVAS BACKGROUND COLOUR
     new Label(form_widget, "Canvas background colour:");
     _color_picker = new ColorPicker(form_widget, CANVAS_DEFAULT_COLOR);
@@ -129,6 +136,10 @@ void DitheringWindow::initialise() {
     first = _palette_checkboxes.at(0);
     if (first != nullptr)
         first->set_checked(true);
+
+    // TODO: Setting to only use greyscale colours from selected palettes
+    // (Do this automatically, test the colours, see: https://austinpray.com/2020/05/25/detecting-grayscale-colors.html
+    // for if I want to be smart about and not just check R = G = B)
 
     // ENABLE MAX THREADS
     new Label(form_widget, "Enable setting a maximum NO threads:");
@@ -296,6 +307,8 @@ void DitheringWindow::create_pattern() {
         }
     }
 
+    auto start = high_resolution_clock::now();
+
     int selected_algorithm = _algorithm_combobox->selected_index();
     if (selected_algorithm == DitheringAlgorithms::FLOYD_STEINBURG) {
         FloydSteinburg floyd_steinburg(&palette, max_threads);
@@ -331,6 +344,10 @@ void DitheringWindow::create_pattern() {
         _app->perform_layout();
         return;
     }
+
+    auto end = high_resolution_clock::now();
+    auto duration = duration_cast<milliseconds>(end - start);
+    std::cout << "Time elapsed dithering: " << duration.count() << "ms" << std::endl;
 
     _app->switch_project(project);
     _app->switch_application_state(ApplicationStates::PROJECT_OPEN);

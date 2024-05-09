@@ -12,23 +12,20 @@ void SplashScreenWindow::initialise() {
 
     Button *button = new Button(this, "Create new project");
     button->set_callback([this](){
-        XStitchEditorApplication* app = (XStitchEditorApplication*) m_parent;
-        app->switch_application_state(ApplicationStates::CREATE_PROJECT);
+        _app->switch_application_state(ApplicationStates::CREATE_PROJECT);
     });
     button->set_font_size(30);
 
     button = new Button(this, "Create new project from an image");
     button->set_callback([this](){
-        XStitchEditorApplication* app = (XStitchEditorApplication*) m_parent;
-        app->switch_application_state(ApplicationStates::CREATE_PROJECT_FROM_IMAGE);
-        app->dithering_window->select_image();
+        _app->switch_application_state(ApplicationStates::CREATE_PROJECT_FROM_IMAGE);
+        _app->dithering_window->select_image();
     });
     button->set_font_size(30);
 
     button = new Button(this, "Load a project");
     button->set_callback([this](){
-        XStitchEditorApplication* app = (XStitchEditorApplication*) m_parent;
-        app->open_project();
+        _app->open_project();
     });
     button->set_font_size(30);
 

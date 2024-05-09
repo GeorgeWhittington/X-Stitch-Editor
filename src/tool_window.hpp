@@ -44,7 +44,7 @@ public:
 
 class ToolWindow : public nanogui::Window {
 public:
-    ToolWindow(nanogui::Widget *parent) : nanogui::Window(parent, "Tools") {};
+    ToolWindow(nanogui::Widget *parent) : _app((XStitchEditorApplication*)parent), nanogui::Window(parent, "Tools") {};
     void initialise();
     bool mouse_over(nanogui::Vector2i position);
     void set_palette();
@@ -53,6 +53,8 @@ public:
     nanogui::PopupButton *_add_to_palette_button;
 
 private:
+    XStitchEditorApplication *_app;
+
     DisabledButton *_selected_thread_button;
     nanogui::Label *_selected_thread_label;
     nanogui::VScrollPanel *_palette_container;

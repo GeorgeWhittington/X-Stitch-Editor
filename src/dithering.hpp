@@ -35,7 +35,9 @@ struct RGBcolour {
 
 class DitheringAlgorithm {
 public:
-    DitheringAlgorithm(std::vector<Thread*> *palette, int max_threads = INT_MAX) : _palette(palette), _max_threads(max_threads) {};
+    DitheringAlgorithm(std::vector<Thread*> *palette, int max_threads = INT_MAX) : _palette(palette) {
+        _max_threads = max_threads <= 0 ? 1 : max_threads;
+    };
 
     // Finds the nearest colour from the available palette using a euclidian distance calculation
     // which is optimised using an internal cache
@@ -46,10 +48,13 @@ protected:
 
     void set_palette(std::vector<Thread*> *new_palette);
     void reduce_palette(int width, int height, Project *project, std::vector<Thread*> *new_palette);
+    void draw_stitch(int x, int y, int height, Thread *new_pixel, Project *project);
 
 private:
     std::map<RGBcolour, Thread*> _nearest_cache;
     std::vector<Thread*> *_palette = nullptr;
+
+    void median_cut(std::vector<Thread*> *image_arr, int depth, std::vector<Thread*> *new_palette);
 };
 
 class FloydSteinburg : DitheringAlgorithm {
@@ -160,25 +165,21 @@ void Bayer<ORDER>::dither(unsigned char *image, int width, int height, Project *
             if ((int)image[i+3] == 0)
                 continue;
 
+            // TODO: look into normalising threshold matrix, when order is
+            // high the brightness is really bad
             factor = _matrix[x & ORDER - 1][row];
             Thread *new_pixel = find_nearest_neighbour(RGBcolour{
                 std::clamp(image[i] + factor, 0, 255), std::clamp(image[i+1] + factor, 0, 255), std::clamp(image[i+2] + factor, 0, 255)
             });
 
-            // Write to output image
-            bool drawn = false;
-            for (int j = 0; j < project->palette.size(); j++) {
-                if (project->palette[j] == new_pixel) {
-                    project->draw_stitch(nanogui::Vector2i(x, height - y - 1), new_pixel, j);
-                    drawn = true;
-                    break;
-                }
-            }
-            if (!drawn) {
-                project->palette.push_back(new_pixel);
-                project->draw_stitch(nanogui::Vector2i(x, height - y - 1), new_pixel, project->palette.size() - 1);
-            }
+            draw_stitch(x, y, height, new_pixel, project);
         }
+    }
+
+    if (project->palette.size() > _max_threads) {
+        std::vector<Thread*> new_palette;
+        reduce_palette(width, height, project, &new_palette);
+        dither(image, width, height, project);
     }
 }
 

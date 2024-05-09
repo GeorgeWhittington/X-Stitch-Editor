@@ -8,10 +8,9 @@
 #include "constants.hpp"
 
 #define MAKE_TOOLBUTTON_CALLBACK(tool, cursor) [&] {                        \
-        XStitchEditorApplication* a = (XStitchEditorApplication*) m_parent; \
-        a->_selected_tool = tool;                                           \
-        a->set_cursor(cursor);                                              \
-        a->_previous_backstitch_point = NO_SUBSTITCH_SELECTED;              \
+        _app->_selected_tool = tool;                                        \
+        _app->set_cursor(cursor);                                           \
+        _app->_previous_backstitch_point = NO_SUBSTITCH_SELECTED;           \
     }                                                                       \
 
 using namespace nanogui;
@@ -108,9 +107,7 @@ void ToolWindow::initialise() {
     popup->set_layout(new BoxLayout(Orientation::Vertical, Alignment::Middle, 5, 5));
     popup->set_fixed_height(500);
 
-    auto app = ((XStitchEditorApplication*)m_parent);
-
-    for (const auto & [manufacturer, man_threads] : app->_threads) {
+    for (const auto & [manufacturer, man_threads] : _app->_threads) {
         Label *popup_label = new Label(popup, manufacturer, "sans-bold");
         Widget *man_widget = new Widget(popup);
         man_widget->set_layout(new GridLayout(Orientation::Horizontal, 7, Alignment::Maximum, 0, 5));
@@ -120,7 +117,7 @@ void ToolWindow::initialise() {
             thread_widget->set_layout(new BoxLayout(Orientation::Vertical, Alignment::Middle, 2, 5));
             EditPaletteButton *popup_thread = new EditPaletteButton(thread_widget);
             popup_thread->set_thread(thread);
-            popup_thread->set_app(app);
+            popup_thread->set_app(_app);
             popup_thread->set_callback();
             popup_thread->set_background_color(thread->color());
             popup_thread->set_tooltip(thread->description);
@@ -138,11 +135,10 @@ void ToolWindow::set_palette() {
 
     _palette_container = new VScrollPanel(this);
 
-    auto app = ((XStitchEditorApplication*)m_parent);
-    std::vector<Thread*> threads = app->_project->palette;
+    std::vector<Thread*> threads = _app->_project->palette;
 
     if (threads.size() < 1) {
-        app->perform_layout();
+        _app->perform_layout();
         return;
     }
 
@@ -171,11 +167,11 @@ void ToolWindow::set_palette() {
     if (threads.size() > 10)
         _palette_container->set_fixed_height(370);
 
-    app->perform_layout();
+    _app->perform_layout();
 };
 
 void ToolWindow::update_selected_thread_widget() {
-    Thread *t = ((XStitchEditorApplication*)m_parent)->_selected_thread;
+    Thread *t = _app->_selected_thread;
     if (t == nullptr) {
         _selected_thread_button->set_icon(FA_BAN);
         _selected_thread_label->set_caption("");

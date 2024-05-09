@@ -403,8 +403,9 @@ void CanvasRenderer::render() {
 
     _render_pass->begin();
 
+    // 20.f is a better value, but the gridmark stretching is more apparent when in fullscreen
     render_cs_shader(mvp);
-    if (minor_grid_mark_pixel_distance >= 20.f) {
+    if (minor_grid_mark_pixel_distance >= 30.f) {
         render_minor_grid_shader(mvp);
         render_major_grid_shader(mvp);
     }

@@ -13,8 +13,7 @@ void MousePositionWindow::initialise() {
 };
 
 void MousePositionWindow::set_captions(int stitch_x, int stitch_y, Thread *thread) {
-    XStitchEditorApplication *app = (XStitchEditorApplication*)m_parent;
-    int screen_height = app->framebuffer_size()[1] / app->pixel_ratio();
+    int screen_height = _app->framebuffer_size()[1] / _app->pixel_ratio();
 
     _mouse_location_label->set_caption(fmt::format("stitch selected: {}, {}", stitch_x, stitch_y));
     if (thread != nullptr) {

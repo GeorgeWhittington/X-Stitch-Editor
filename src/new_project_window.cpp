@@ -49,8 +49,6 @@ void NewProjectWindow::initialise() {
     confirm_button->set_callback([this](){
         _errors->set_visible(false);
 
-        XStitchEditorApplication *app = (XStitchEditorApplication*) m_parent;
-
         Project *project;
 
         try {
@@ -63,13 +61,12 @@ void NewProjectWindow::initialise() {
         } catch (const std::invalid_argument& err) {
             _errors->set_caption(err.what());
             _errors->set_visible(true);
-            app->perform_layout();
+            _app->perform_layout();
             return;
         }
 
-        app->switch_project(project);
-
-        app->switch_application_state(ApplicationStates::PROJECT_OPEN);
+        _app->switch_project(project);
+        _app->switch_application_state(ApplicationStates::PROJECT_OPEN);
     });
 
     center();
