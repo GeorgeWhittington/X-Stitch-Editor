@@ -4,7 +4,6 @@
 #include <nanogui/nanogui.h>
 
 #include "x_stitch_editor.hpp"
-#include "threads.hpp"
 
 #if defined(_WIN32)
 #  if defined(APIENTRY)

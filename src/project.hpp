@@ -31,8 +31,9 @@ struct BackStitch {
     BackStitch(nanogui::Vector2f _start, nanogui::Vector2f _end, int _palette_index) : start(_start), end(_end), palette_index(_palette_index) {};
 };
 
-struct Project
+class Project
 {
+public:
     std::string title;
     int width;
     int height;
@@ -49,6 +50,7 @@ struct Project
     Project(std::string title_, int width_, int height_, nanogui::Color bg_color_);
     // construct a project using a .OXS file.
     Project(const char *project_path, std::map<std::string, std::map<std::string, Thread*>*> *threads);
+    ~Project();
     // Draws a single stitch to the canvas. Throws std::runtime_error if the thread provided is not in the project palette.
     void draw_stitch(nanogui::Vector2i stitch, Thread *thread);
     // Draws a single stitch to the canvas. Doesn't check if the thread provided is in the project palette.

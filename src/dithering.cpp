@@ -165,6 +165,9 @@ void DitheringAlgorithm::median_cut(std::vector<Thread*> *image_arr, int depth, 
 }
 
 void DitheringAlgorithm::reduce_palette(int width, int height, Project *project, std::vector<Thread*> *new_palette) {
+    // TODO: could do bit_ceil, and then analyse palette for *closest* threads and remove
+    // until _max_threads is reached
+
     // Median cut can only provide palettes that are powers of 2 so find the largest
     // power of 2 that fits inside _max_threads. All other values of the palette
     // will be picked based on popularity.
@@ -194,7 +197,9 @@ void DitheringAlgorithm::reduce_palette(int width, int height, Project *project,
         std::vector<Thread*> prefer;
         for (auto prefered : preferred_threads) {
             for (Thread *t : *_palette) {
-                if (t->number == prefered.second && t->company == prefered.first) {
+                if (t->is_blended())
+                    continue;
+                if (t->number() == prefered.second && t->company() == prefered.first) {
                     prefer.push_back(t);
                     break;
                 }

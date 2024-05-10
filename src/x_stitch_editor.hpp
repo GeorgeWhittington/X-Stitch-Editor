@@ -7,19 +7,6 @@
 #include "constants.hpp"
 #include "threads.hpp"
 
-// state machine with enums for flow through app states (splashscreen, create project, project is open etc)
-
-class CustomTheme : public nanogui::Theme {
-public:
-    CustomTheme(NVGcontext *ctx) : nanogui::Theme(ctx) {
-        m_icon_scale = 0.9;
-        m_window_fill_focused = nanogui::Color(45, 255);
-        m_window_fill_unfocused = nanogui::Color(43, 255);
-        m_window_title_focused = nanogui::Color(255, 255);
-        m_window_title_unfocused = nanogui::Color(220, 255);
-    }
-};
-
 class ToolWindow;
 class MousePositionWindow;
 class SplashScreenWindow;

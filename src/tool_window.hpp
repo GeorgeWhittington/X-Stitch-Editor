@@ -4,6 +4,13 @@
 #include "constants.hpp"
 #include "threads.hpp"
 
+class ThemeNoRefCount : public nanogui::Theme {
+public:
+    ThemeNoRefCount(NVGcontext *ctx) : nanogui::Theme(ctx) {};
+    virtual ~ThemeNoRefCount() {};
+    void inc_ref() const noexcept {};
+};
+
 class DisabledButton : public nanogui::Button {
 public:
     DisabledButton(nanogui::Widget *parent, const std::string &caption = "Untitled", int icon = 0) : nanogui::Button(parent, caption, icon) {};
@@ -53,9 +60,16 @@ public:
     nanogui::PopupButton *_add_to_palette_button;
 
 private:
+    void create_themes();
+    void zoom_in();
+    void zoom_out();
+
     XStitchEditorApplication *_app;
 
     DisabledButton *_selected_thread_button;
     nanogui::Label *_selected_thread_label;
     nanogui::VScrollPanel *_palette_container;
+    nanogui::Theme *_selected_thread_theme;
+    nanogui::Theme *_palettebutton_black_text_theme = nullptr;
+    nanogui::Theme *_palettebutton_white_text_theme = nullptr;
 };

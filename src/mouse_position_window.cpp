@@ -17,7 +17,7 @@ void MousePositionWindow::set_captions(int stitch_x, int stitch_y, Thread *threa
 
     _mouse_location_label->set_caption(fmt::format("stitch selected: {}, {}", stitch_x, stitch_y));
     if (thread != nullptr) {
-        _mouse_location_label_2->set_caption(fmt::format("thread: {} {}", thread->company, thread->number));
+        _mouse_location_label_2->set_caption(fmt::format("thread: {}", thread->full_name(thread->default_position())));
         set_position(Vector2i(0, screen_height - 42));
     } else {
         _mouse_location_label_2->set_caption("");

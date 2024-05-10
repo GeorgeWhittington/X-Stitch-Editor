@@ -19,6 +19,7 @@ struct TableRow {
     std::string description;
     int no_stitches = 0;
     int no_backstitches = 0;
+    bool is_blended;
 };
 
 struct PatternPageContext {

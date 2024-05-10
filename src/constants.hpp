@@ -7,9 +7,7 @@ enum ToolOptions {
     SINGLE_STITCH,
     BACK_STITCH,
     ERASE,
-    FILL,
-    ZOOM_IN,
-    ZOOM_OUT
+    FILL
 };
 
 enum ApplicationStates {

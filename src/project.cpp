@@ -128,7 +128,9 @@ Project::Project(const char *project_path, std::map<std::string, std::map<std::s
     bool match = true;
     for (int i = 0; i < palette_length; i++) {
         palette_item = palette_item->NextSiblingElement("palette_item");
-        std::string thread_str = (retrieve_string_attribute(palette_item, "number")).c_str();
+        std::string thread_str = retrieve_string_attribute(palette_item, "number");
+        std::string blended_str = retrieve_string_attribute(palette_item, "blendcolor");
+
         std::smatch matches;
         match = std::regex_match(thread_str, matches, thread_regex, std::regex_constants::match_default);
 
@@ -136,8 +138,25 @@ Project::Project(const char *project_path, std::map<std::string, std::map<std::s
             throw std::runtime_error("Error parsing file, palette number in unrecognised format");
 
         try {
-            auto manufacturer = threads->at(matches.str(1));
-            palette.push_back(manufacturer->at(matches.str(2)));
+            if (blended_str != "nil") {
+                std::string thread_str_2 = retrieve_string_attribute(palette_item, "blendnumber");
+                std::smatch matches_2;
+                match = std::regex_match(thread_str_2, matches_2, thread_regex, std::regex_constants::match_default);
+                if (!match)
+                    throw std::runtime_error("Error parsing file, blended palette number in unrecognised format");
+
+                auto manufacturer_1 = threads->at(matches.str(1));
+                auto manufacturer_2 = threads->at(matches_2.str(1));
+
+                SingleThread *t1 = (SingleThread*)manufacturer_1->at(matches.str(2));
+                SingleThread *t2 = (SingleThread*)manufacturer_2->at(matches_2.str(2));
+
+                BlendedThread *blended_thread = new BlendedThread(create_blended_thread(t1, t2));
+                palette.push_back(blended_thread);
+            } else {
+                auto manufacturer = threads->at(matches.str(1));
+                palette.push_back(manufacturer->at(matches.str(2)));
+            }
         } catch (std::out_of_range&) {
             throw std::runtime_error(fmt::format("Error parsing file, unrecognised thread referenced: {} {}", matches.str(1), matches.str(2)));
         }
@@ -212,6 +231,16 @@ Project::Project(const char *project_path, std::map<std::string, std::map<std::s
         }
     }
 };
+
+Project::~Project() {
+    // Any blended threads need to be deleted
+    for (Thread *t : palette) {
+        if (!t->is_blended())
+            continue;
+
+        delete (BlendedThread*)t;
+    }
+}
 
 void Project::draw_stitch(Vector2i stitch, Thread *thread) {
     int palette_index = -1;
@@ -548,9 +577,19 @@ void Project::save(const char *filepath, XStitchEditorApplication *app) {
     for (int i = 0; i < palette.size(); i++) {
         palette_item_element = palette_element->InsertNewChildElement("palette_item");
         palette_item_element->SetAttribute("index", i + 1);
-        palette_item_element->SetAttribute("number", fmt::format("{} {}", palette[i]->company, palette[i]->number).c_str());
-        palette_item_element->SetAttribute("name", palette[i]->description.c_str());
-        palette_item_element->SetAttribute("color", fmt::format("{:02x}{:02x}{:02x}", palette[i]->R, palette[i]->G, palette[i]->B).c_str());
+        palette_item_element->SetAttribute("number", palette[i]->full_name(ThreadPosition::FIRST).c_str());
+        palette_item_element->SetAttribute("name", palette[i]->description(palette[i]->default_position()).c_str());
+        if (palette[i]->is_blended()) {
+            BlendedThread *t = (BlendedThread*)(palette[i]);
+
+            palette_item_element->SetAttribute("blendnumber", t->full_name(ThreadPosition::FIRST).c_str());
+            palette_item_element->SetAttribute("color", fmt::format(
+                "{:02x}{:02x}{:02x}", t->thread_1->R, t->thread_1->G, t->thread_1->B).c_str());
+            palette_item_element->SetAttribute("blendcolor", fmt::format(
+                "{:02x}{:02x}{:02x}", t->thread_2->R, t->thread_2->G, t->thread_2->B).c_str());
+        } else {
+            palette_item_element->SetAttribute("color", fmt::format("{:02x}{:02x}{:02x}", palette[i]->R, palette[i]->G, palette[i]->B).c_str());
+        }
     }
 
     XMLElement *full_stitches_element = chart_element->InsertNewChildElement("fullstitches");

@@ -511,6 +511,7 @@ void PDFWizard::draw_chart(PageContentContext *ctx, PatternPageContext p_ctx, bo
                 if (palette_index == -1)
                     continue;
 
+                // TODO: render blended threads as two triangles
                 if (_settings->render_in_colour) {
                     nanogui::Color c = _project->palette[palette_index]->color();
                     ctx->rg(c.r(), c.g(), c.b()); // set fill colour
@@ -626,7 +627,10 @@ void PDFWizard::save_page(PDFPage *page, PageContentContext *page_content_ctx, f
 void PDFWizard::fetch_symbol_data() {
     for (int i = 0; i < _project->palette.size(); i ++) {
         Thread *t = _project->palette[i];
-        _symbol_key_rows.push_back(new TableRow{i, t->company + " " + t->number, t->description});
+        _symbol_key_rows.push_back(new TableRow{
+            i, t->full_name(t->default_position()),
+            t->description(t->default_position()), t->is_blended()
+        });
     }
 
     // Find stitch count for each colour

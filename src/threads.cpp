@@ -9,6 +9,13 @@
 #include <tinyxml2.h>
 #include <fmt/core.h>
 
+BlendedThread create_blended_thread(SingleThread *thread_1, SingleThread *thread_2) {
+    int R = (thread_1->R + thread_2->R) / 2;
+    int G = (thread_1->G + thread_2->G) / 2;
+    int B = (thread_1->B + thread_2->B) / 2;
+    return BlendedThread(thread_1, thread_2, R, G, B);
+}
+
 std::string load_manufacturer(const char *file_path, std::map<std::string, Thread*> *map) {
     tinyxml2::XMLDocument doc;
     if (doc.LoadFile(file_path) != tinyxml2::XML_SUCCESS)
@@ -44,8 +51,7 @@ std::string load_manufacturer(const char *file_path, std::map<std::string, Threa
         if (element->QueryIntAttribute("blue", &thread_b) != tinyxml2::XML_SUCCESS)
             throw std::runtime_error("Error parsing XML file: Thread element containing no blue value");
 
-        Thread *thread_struct = new Thread;
-        *thread_struct = {manufacturer_name, thread_number, thread_description, thread_r, thread_g, thread_b};
+        Thread *thread_struct = new SingleThread(manufacturer_name, thread_number, thread_description, thread_r, thread_g, thread_b);
 
         (*map)[thread_number] = thread_struct;
 

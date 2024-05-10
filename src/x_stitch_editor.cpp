@@ -40,8 +40,13 @@ XStitchEditorApplication::XStitchEditorApplication() :
 {
     load_all_threads();
 
-    CustomTheme *theme = new CustomTheme(nvg_context());
-    set_theme(theme);
+    // TODO: remove icon scale and specifically apply that to
+    // the toolbuttons that I want it on using a global icon scale theme
+    theme()->m_icon_scale = 0.9f;
+    theme()->m_window_fill_focused = nanogui::Color(45, 255);
+    theme()->m_window_fill_unfocused = nanogui::Color(43, 255);
+    theme()->m_window_title_focused = nanogui::Color(255, 255);
+    theme()->m_window_title_unfocused = nanogui::Color(220, 255);
 
     tool_window = new ToolWindow(this);
     tool_window->initialise();
@@ -308,15 +313,6 @@ bool XStitchEditorApplication::mouse_button_event(const Vector2i &p, int button,
             return false;
 
     if (button == GLFW_MOUSE_BUTTON_1 && down) {
-        if (_selected_tool == ToolOptions::ZOOM_IN) {
-            _canvas_renderer->_camera->zoom_to_point(mouse_ndc, 1.1f, _canvas_renderer->_position);
-            return false;
-        }
-        if (_selected_tool == ToolOptions::ZOOM_OUT) {
-            _canvas_renderer->_camera->zoom_to_point(mouse_ndc, 0.9f, _canvas_renderer->_position);
-            return false;
-        }
-
         Vector2i selected_stitch = _canvas_renderer->_selected_stitch;
         Vector2f selected_substitch = _canvas_renderer->_selected_sub_stitch;
 
