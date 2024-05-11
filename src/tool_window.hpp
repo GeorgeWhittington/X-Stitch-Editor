@@ -90,7 +90,6 @@ public:
     nanogui::PopupButton *_add_blend_thread_popup_button;
     nanogui::Button *_clear_threads_button;
     nanogui::Button *_add_thread_button;
-    nanogui::Label *_add_thread_errors;
 
     SingleThread *_selected_thread = nullptr;
     SingleThread *_selected_blend_thread = nullptr;

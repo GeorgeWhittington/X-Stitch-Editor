@@ -30,8 +30,8 @@ void AddToPaletteButton::palettebutton_callback() {
         _app->tool_window->_selected_thread = (SingleThread*)_thread;
     } else {
         if (_thread == _app->tool_window->_selected_thread) {
-            // TODO: display error to user
-            return; // Blending a thread with itself makes no sense
+            new MessageDialog(_app, MessageDialog::Type::Warning, "Error", "You cannot blend a thread with itself");
+            return;
         }
 
         _app->tool_window->_selected_blend_thread = (SingleThread*)_thread;
@@ -52,24 +52,31 @@ void AddToPaletteButton::palettebutton_callback() {
 };
 
 void DeletePaletteButton::palettebutton_callback() {
-    // TODO: are you sure modal, let user know that they'll erase
-    // any existing stitches in this colour
+    MessageDialog *dlg = new MessageDialog(_app, MessageDialog::Type::Warning,
+        "Warning", "Deleting a thread will clear any stitches or backstitches in that colour, are you sure you want to do this?",
+        "Yes", "Cancel", true);
+    dlg->set_callback([this](int response) {
+        if (response != 0)
+            return;
 
-    try {
-        _app->_project->remove_from_palette(_thread);
-        _app->_canvas_renderer->upload_texture();
-        _app->_canvas_renderer->update_backstitch_buffers();
-        if (_app->_selected_thread == _thread) {
-            _app->_selected_thread = nullptr;
-            _app->tool_window->update_selected_thread_widget();
+        try {
+            _app->_project->remove_from_palette(_thread);
+            _app->_canvas_renderer->upload_texture();
+            _app->_canvas_renderer->update_backstitch_buffers();
+            if (_app->_selected_thread == _thread) {
+                _app->_selected_thread = nullptr;
+                _app->tool_window->update_selected_thread_widget();
+            }
+        } catch (std::invalid_argument& err) {
+            std::cout << err.what() << std::endl;
         }
-    } catch (std::invalid_argument& err) {
-        std::cout << err.what() << std::endl;
-    }
+
+        _app->tool_window->_remove_from_palette_button->set_pushed(false);
+        _app->tool_window->update_palette_widget();
+        _app->perform_layout();
+    });
 
     _app->tool_window->_remove_from_palette_button->set_pushed(false);
-    _app->tool_window->update_palette_widget();
-    _app->perform_layout();
 }
 
 void ToolWindow::initialise() {
@@ -200,8 +207,7 @@ void ToolWindow::initialise() {
             }
 
             if (thread_exists) {
-                // thread already exists in palette
-                // TODO: display error to user
+                new MessageDialog(_app, MessageDialog::Type::Warning, "Error", "The thread selected is already in this project's palette.");
                 return;
             }
         }

@@ -184,9 +184,7 @@ void XStitchEditorApplication::open_project() {
     try {
         project = new Project(path.c_str(), &_threads);
     } catch (const std::runtime_error& err) {
-        // TODO: plus all other errors the constructor raises
-        // And put the error msg into a popup
-        std::cerr << err.what() << std::endl;
+        new nanogui::MessageDialog(this, nanogui::MessageDialog::Type::Warning, "Error", err.what());
         return;
     }
 
