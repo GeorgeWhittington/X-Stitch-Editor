@@ -3,6 +3,7 @@
 #include "main_menu_window.hpp"
 #include "pdf_creation.hpp"
 #include <vector>
+#include <filesystem>
 
 void checkbox_callback(bool checked, nanogui::CheckBox *this_checkbox, nanogui::CheckBox *that_checkbox) {
     if (!checked && that_checkbox->checked() != true) {
@@ -74,7 +75,6 @@ void PDFWindow::reset_form() {
 }
 
 void PDFWindow::save_pdf() {
-    // TODO: extract and verify input
     if (_checkbox_bw->checked() && _checkbox_colour->checked()) {
         _checkbox_colour->set_checked(true);
         _checkbox_bw->set_checked(false);
@@ -109,8 +109,19 @@ void PDFWindow::save_pdf() {
     // Show save dialog, then create and save pdf if a path is returned
     std::vector<std::pair<std::string, std::string>> permitted_pdf_files = {{"pdf", "Portable Document Format"}, {"PDF", "Portable Document Format"}};
     std::string path = nanogui::file_dialog(permitted_pdf_files, true);
-    if (path != "")
-        pdf_wizard.create_and_save_pdf(path);
+    if (path != "") {
+        try {
+            pdf_wizard.create_and_save_pdf(path);
+        } catch (std::runtime_error& err) {
+            new nanogui::MessageDialog(_app, nanogui::MessageDialog::Type::Warning, "Error creating PDF", err.what());
+            try {
+                std::filesystem::remove(path);
+            } catch(const std::filesystem::filesystem_error& err) {
+                // If deletion of the half-written pdf fails it's fine not to tell the end-user
+                std::cout << "Error deleting PDF after creation failed: " << err.what() << std::endl;
+            }
+        }
+    }
 
     _app->main_menu_window->close_all_menus();
 }

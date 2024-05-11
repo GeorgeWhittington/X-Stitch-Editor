@@ -67,7 +67,7 @@ void DeletePaletteButton::palettebutton_callback() {
         std::cout << err.what() << std::endl;
     }
 
-    _app->tool_window->_edit_palette_button->set_pushed(false);
+    _app->tool_window->_remove_from_palette_button->set_pushed(false);
     _app->tool_window->update_palette_widget();
     _app->perform_layout();
 }
@@ -150,31 +150,27 @@ void ToolWindow::initialise() {
     _selected_thread_button->set_theme(_selected_thread_theme);
     update_selected_thread_widget();
 
-    // TODO: right now when you scroll with an add_thread_popup open it
-    // scrolls also, offscreen. This looks bad. Make only rm thread section
-    // scroll, or maybe just split these into two popups?
-    // The add thread stuff could even go directly on the tool window?
     label = new Label(this, "Palette", "sans-bold");
 
-    _edit_palette_button = new PopupButton(this, "Edit Palette");
-    _edit_palette_button->set_chevron_icon(0);
-    _edit_palette_button->set_callback([this]() {
-        update_remove_thread_widget();
-    });
-    VScrollPanel *popup_scroll = new VScrollPanel(_edit_palette_button->popup());
-    _edit_palette_widget = new Widget(popup_scroll);
-    _edit_palette_widget->set_layout(new GroupLayout(5, 5, 10, 0));
+    _add_to_palette_button = new PopupButton(this, "Add to Palette");
+    _add_to_palette_button->set_chevron_icon(0);
+    _add_to_palette_widget = new Widget(_add_to_palette_button->popup());
+    _add_to_palette_widget->set_layout(new GroupLayout(10, 5, 10, 0));
+    _add_to_palette_button->popup()->set_fixed_height(122);
 
-    new Label(_edit_palette_widget, "Add Thread", "sans-bold");
-    _add_thread_popup_button = new PopupButton(_edit_palette_widget, "Select Thread");
+    _add_thread_popup_button = new PopupButton(_add_to_palette_widget, "Select Thread");
     _add_thread_popup_button->set_chevron_icon(0);
 
-    _add_blend_thread_popup_button = new PopupButton(_edit_palette_widget, "Select Blend Thread");
+    _add_blend_thread_popup_button = new PopupButton(_add_to_palette_widget, "Select Blend Thread");
     _add_blend_thread_popup_button->set_chevron_icon(0);
     _add_blend_thread_popup_button->set_enabled(false);
 
-    _add_thread_button = new Button(_edit_palette_widget, "Add Thread");
+    Widget *add_thread_btns_widget = new Widget(_add_to_palette_widget);
+    add_thread_btns_widget->set_layout(new BoxLayout(Orientation::Horizontal, Alignment::Middle, 0, 5));
+
+    _add_thread_button = new Button(add_thread_btns_widget, "Add Thread", FA_PLUS);
     _add_thread_button->set_enabled(false);
+    _add_thread_button->set_fixed_width(150);
     _add_thread_button->set_callback([this]() {
         Thread *t = nullptr;
         if (_selected_thread != nullptr && _selected_blend_thread != nullptr) {
@@ -212,7 +208,7 @@ void ToolWindow::initialise() {
 
         _app->_project->palette.push_back(t);
         _app->tool_window->update_palette_widget();
-        _app->tool_window->_edit_palette_button->set_pushed(false);
+        _app->tool_window->_add_to_palette_button->set_pushed(false);
 
         if (_app->_selected_thread == nullptr) {
             _app->_selected_thread = t;
@@ -223,12 +219,17 @@ void ToolWindow::initialise() {
         _app->perform_layout();
     });
 
-    _clear_threads_button = new Button(_edit_palette_widget, "Clear Selection");
+    _clear_threads_button = new Button(add_thread_btns_widget, "Clear Selection", FA_BAN);
     _clear_threads_button->set_enabled(false);
     _clear_threads_button->set_callback([this]() { reset_add_thread_form(); });
 
-    _remove_threads_label = new Label(_edit_palette_widget, "Remove Threads", "sans-bold");
-    _remove_threads_label->set_visible(false);
+    _remove_from_palette_button = new PopupButton(this, "Remove from Palette");
+    _remove_from_palette_button->set_chevron_icon(0);
+    _remove_from_palette_button->set_enabled(false);
+    _remove_from_palette_button->set_callback([this]() { update_remove_thread_widget(); });
+    _remove_threads_scroll_panel = new VScrollPanel(_remove_from_palette_button->popup());
+    _remove_from_palette_widget = new Widget(_remove_threads_scroll_panel);
+    _remove_from_palette_widget->set_layout(new GroupLayout(10, 5, 10, 0));
 
     update_thread_list_popups(_add_thread_popup_button);
     update_thread_list_popups(_add_blend_thread_popup_button);
@@ -284,7 +285,7 @@ void ToolWindow::update_thread_list_popups(PopupButton *add_thread_btn) {
 
 void ToolWindow::update_remove_thread_widget() {
     if (_remove_threads_widget != nullptr) {
-        _edit_palette_widget->remove_child(_remove_threads_widget);
+        _remove_from_palette_widget->remove_child(_remove_threads_widget);
         _remove_threads_widget = nullptr;
     }
 
@@ -294,13 +295,11 @@ void ToolWindow::update_remove_thread_widget() {
             palette_entries++;
 
     if (palette_entries == 0) {
-        _remove_threads_label->set_visible(false);
         _app->perform_layout();
         return;
     }
 
-    _remove_threads_label->set_visible(true);
-    _remove_threads_widget = new Widget(_edit_palette_widget);
+    _remove_threads_widget = new Widget(_remove_from_palette_widget);
     GridLayout *layout = new GridLayout(Orientation::Horizontal, 3, Alignment::Fill, 0, 5);
     _remove_threads_widget->set_layout(layout);
 
@@ -353,8 +352,11 @@ void ToolWindow::update_palette_widget() {
 
     if (palette_size < 1) {
         _app->perform_layout();
+        _remove_from_palette_button->set_enabled(false);
         return;
     }
+
+    _remove_from_palette_button->set_enabled(true);
 
     Widget *palette_widget = new Widget(_palette_container);
     palette_widget->set_layout(new GroupLayout(0, 5, 0, 0));

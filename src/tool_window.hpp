@@ -80,14 +80,17 @@ public:
     void create_themes();
     void reset_add_thread_form();
 
-    nanogui::PopupButton *_edit_palette_button;
-    nanogui::Widget *_edit_palette_widget;
+    nanogui::PopupButton *_add_to_palette_button;
+    nanogui::PopupButton *_remove_from_palette_button;
+    nanogui::Widget *_add_to_palette_widget;
+    nanogui::Widget *_remove_from_palette_widget;
     nanogui::Theme *_palettebutton_black_text_theme = nullptr;
     nanogui::Theme *_palettebutton_white_text_theme = nullptr;
     nanogui::PopupButton *_add_thread_popup_button;
     nanogui::PopupButton *_add_blend_thread_popup_button;
     nanogui::Button *_clear_threads_button;
     nanogui::Button *_add_thread_button;
+    nanogui::Label *_add_thread_errors;
 
     SingleThread *_selected_thread = nullptr;
     SingleThread *_selected_blend_thread = nullptr;
@@ -103,6 +106,6 @@ private:
     nanogui::VScrollPanel *_palette_container;
     nanogui::Theme *_selected_thread_theme;
 
-    nanogui::Label *_remove_threads_label = nullptr;
+    nanogui::VScrollPanel *_remove_threads_scroll_panel;
     nanogui::Widget *_remove_threads_widget = nullptr;
 };

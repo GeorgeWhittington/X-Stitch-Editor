@@ -22,10 +22,11 @@ const float CHART_STITCH_WIDTH = 10.f;
 const int CHART_STITCHES_X = CHART_WIDTH / CHART_STITCH_WIDTH;
 const int CHART_STITCHES_Y = CHART_HEIGHT / CHART_STITCH_WIDTH;
 
-const std::string symbol_key_headers[5] = {"Symbol", "Number", "Description", "Stitches", "Backstitches"};
+const std::string symbol_key_headers[4] = {"Symbol", "Number", "Stitches", "Backstitches"};
 
 const std::string symbol_dir = "/Users/george/Documents/uni_year_three/Digital Systems Project/X-Stitch-Editor/assets/symbols/";
-const std::string symbols[84] = {
+const int MAX_SYMBOLS = 84;
+const std::string symbols[MAX_SYMBOLS] = {
     "air", "aircraft", "arrow-down", "arrow-left", "arrow-up",
     "arrow-right", "arrow-with-circle-down", "arrow-with-circle-left",
     "arrow-with-circle-right", "arrow-with-circle-up", "attachment",
@@ -192,16 +193,13 @@ void PDFWizard::create_title_page() {
 }
 
 void PDFWizard::create_symbol_key_page() {
-    // TODO: blended thread descriptions easily go off-page
-    // need to either implement multi-line rendering or get rid of description
-    // column (it's not totally necessary)
     PDFPage *page = new PDFPage();
     page->SetMediaBox(PDFRectangle(0, 0, A4_WIDTH, A4_HEIGHT));
     PageContentContext *page_content_ctx = _pdf_writer.StartPageContentContext(page);
 
     // Find longest item per column, to calculate table spacing
-    float longest_in_column[4];
-    for (int i = 0; i < 4; i++) {
+    float longest_in_column[3];
+    for (int i = 0; i < 3; i++) {
         auto text_dimensions = _helvetica_bold->CalculateTextDimensions(symbol_key_headers[i], 14);
         longest_in_column[i] = text_dimensions.width;
     }
@@ -210,13 +208,9 @@ void PDFWizard::create_symbol_key_page() {
         if (num_text_dimensions.width > longest_in_column[1])
             longest_in_column[1] = num_text_dimensions.width;
 
-        auto desc_text_dimensions = _helvetica->CalculateTextDimensions(row->description, 14);
-        if (desc_text_dimensions.width > longest_in_column[2])
-            longest_in_column[2] = desc_text_dimensions.width;
-
         auto no_stitches_text_dimensions = _helvetica->CalculateTextDimensions(std::to_string(row->no_stitches), 14);
-        if (no_stitches_text_dimensions.width > longest_in_column[3])
-            longest_in_column[3] = no_stitches_text_dimensions.width;
+        if (no_stitches_text_dimensions.width > longest_in_column[2])
+            longest_in_column[2] = no_stitches_text_dimensions.width;
     }
 
     page_content_ctx->WriteText(PAGE_MARGIN, A4_HEIGHT - PAGE_MARGIN - 10, "Symbol Key", *_title_text_options);
@@ -225,9 +219,9 @@ void PDFWizard::create_symbol_key_page() {
     float y = A4_HEIGHT - 100;
     float column_spacing = 20.f;
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 4; i++) {
         page_content_ctx->WriteText(x, y, symbol_key_headers[i], *_body_bold_text_options);
-        if (i != 4)
+        if (i != 3)
             x += longest_in_column[i] + column_spacing;
     }
 
@@ -249,13 +243,63 @@ void PDFWizard::create_symbol_key_page() {
     page_content_ctx->J(FT_Stroker_LineCap_::FT_STROKER_LINECAP_ROUND); // set end cap
     nanogui::Color c;
 
-    // TODO: render blended threads as two triangles
     for (TableRow *row : _symbol_key_rows) {
+        if (y < PAGE_MARGIN) {
+            // Page is full, save and create a new one to continue on
+            save_page(page, page_content_ctx, PAGE_MARGIN);
+
+            page = new PDFPage();
+            page->SetMediaBox(PDFRectangle(0, 0, A4_WIDTH, A4_HEIGHT));
+            page_content_ctx = _pdf_writer.StartPageContentContext(page);
+            y = A4_HEIGHT - PAGE_MARGIN - 10;
+
+            // Redraw headers
+            for (int i = 0; i < 4; i++) {
+                page_content_ctx->WriteText(x, y, symbol_key_headers[i], *_body_bold_text_options);
+                if (i != 3)
+                    x += longest_in_column[i] + column_spacing;
+            }
+
+            y -= 5;
+
+            // Draw horizontal line under headers
+            page_content_ctx->w(1.f); // line width
+            page_content_ctx->J(FT_Stroker_LineCap_::FT_STROKER_LINECAP_BUTT); // set end cap
+            page_content_ctx->RG(0.f, 0.f, 0.f); // set stroke colour
+            draw_line(page_content_ctx, PAGE_MARGIN, y, A4_WIDTH - PAGE_MARGIN, y);
+
+            x = PAGE_MARGIN;
+            y -= 15;
+        }
+
         c = _project->palette[row->palette_id]->color();
         if (row->no_stitches != 0) {
-            page_content_ctx->rg(c.r(), c.g(), c.b()); // set fill colour
-            page_content_ctx->re(x, y - 6, 18, 18); // draw rectangle
-            page_content_ctx->f(); // fill
+            Thread *t = _project->palette[row->palette_id];
+
+            if (!t->is_blended()) {
+                page_content_ctx->rg(c.r(), c.g(), c.b()); // set fill colour
+                page_content_ctx->re(x, y - 6, 18, 18); // draw rectangle
+                page_content_ctx->f(); // fill
+            } else {
+                BlendedThread *bt = (BlendedThread*)t;
+                nanogui::Color c1 = bt->thread_1->color();
+                nanogui::Color c2 = bt->thread_2->color();
+
+                // Drawing two triangles that make up a square
+                page_content_ctx->rg(c1.r(), c1.g(), c1.b()); // set fill colour
+                page_content_ctx->m(x, y - 6); // move cursor
+                page_content_ctx->l(x + 18, y - 6); // draw line to
+                page_content_ctx->l(x, y - 6 + 18); // draw line to
+                page_content_ctx->l(x, y - 6); // draw line to
+                page_content_ctx->f(); // fill
+
+                page_content_ctx->rg(c2.r(), c2.g(), c2.b()); // set fill colour
+                page_content_ctx->m(x + 18, y - 6 + 18); // move cursor
+                page_content_ctx->l(x + 18, y - 6); // draw line to
+                page_content_ctx->l(x, y - 6 + 18); // draw line to
+                page_content_ctx->l(x + 18, y - 6 + 18); // draw line to
+                page_content_ctx->f(); // fill
+            }
 
             if (_settings->render_in_colour) {
                 page_content_ctx->DrawImage(x + 2, y - 4, _project_symbols[row->palette_id], image_options);
@@ -288,11 +332,8 @@ void PDFWizard::create_symbol_key_page() {
         page_content_ctx->WriteText(x, y, row->number, *_body_text_options);
         x += longest_in_column[1] + column_spacing;
 
-        page_content_ctx->WriteText(x, y, row->description, *_body_text_options);
-        x += longest_in_column[2] + column_spacing;
-
         page_content_ctx->WriteText(x, y, std::to_string(row->no_stitches), *_body_text_options);
-        x += longest_in_column[3] + column_spacing;
+        x += longest_in_column[2] + column_spacing;
 
         page_content_ctx->WriteText(x, y, std::to_string(row->no_backstitches), *_body_text_options);
 
@@ -672,6 +713,10 @@ void PDFWizard::fetch_symbol_data() {
     }
     for (auto rit = to_delete.rbegin(); rit != to_delete.rend(); rit++)
         _symbol_key_rows.erase(_symbol_key_rows.begin() + *rit);
+
+    if (_symbol_key_rows.size() > MAX_SYMBOLS) {
+        throw std::runtime_error("The project palette is too large for the number of symbols available.");
+    }
 
     // Load all symbols
     int i = 0;

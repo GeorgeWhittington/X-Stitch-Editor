@@ -226,9 +226,9 @@ void DitheringWindow::select_image() {
     _image = stbi_load(path.c_str(), &_width, &_height, &no_channels, 4); // requesting 4 channels
 
     if (_image == nullptr) {
-        std::cout << "Error loading image: " << stbi_failure_reason() << std::endl;
-        // TODO: display error to user
+        new nanogui::MessageDialog(_app, nanogui::MessageDialog::Type::Warning, "Error loading image", stbi_failure_reason());
         _app->switch_application_state(ApplicationStates::LAUNCH);
+        return;
     }
 
     _width_intbox->set_value(_width);
@@ -291,7 +291,8 @@ void DitheringWindow::create_pattern() {
     int user_width = _width_intbox->value();
     int user_height = _height_intbox->value();
     if (_width != user_width || _height != user_height) {
-        unsigned char *resized_image = stbir_resize_uint8_srgb(_image, _width, _height, 0, NULL, user_width, user_height, 0, stbir_pixel_layout::STBIR_RGBA);
+        unsigned char *resized_image = nullptr;
+        resized_image = stbir_resize_uint8_srgb(_image, _width, _height, 0, NULL, user_width, user_height, 0, stbir_pixel_layout::STBIR_RGBA);
 
         if (resized_image != nullptr) {
             stbi_image_free(_image);
@@ -302,7 +303,6 @@ void DitheringWindow::create_pattern() {
             _errors->set_visible(true);
             _errors->set_caption("Error resizing image");
             _app->perform_layout();
-            // TODO: Figure out where error codes are fetched so that we can log that data
             return;
         }
     }
