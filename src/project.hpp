@@ -77,7 +77,4 @@ public:
     bool is_backstitch_valid(nanogui::Vector2f stitch);
     // Removes a thread from the palette (Adjusting thread_data so that it is still correct).
     void remove_from_palette(Thread *thread);
-
-private:
-    std::vector<BlendedThread*> deleted_blended_threads;
 };

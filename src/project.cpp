@@ -240,8 +240,6 @@ Project::~Project() {
 
         delete (BlendedThread*)t;
     }
-    for (BlendedThread *t : deleted_blended_threads)
-        delete t;
 }
 
 void Project::draw_stitch(Vector2i stitch, Thread *thread) {
@@ -640,8 +638,10 @@ bool Project::is_backstitch_valid(Vector2f stitch) {
 void Project::remove_from_palette(Thread *thread) {
     int to_delete = -1;
     for (int i = 0; i < palette.size(); i++) {
-        if (palette[i] == thread)
+        if (palette[i] == thread) {
             to_delete = i;
+            break;
+        }
     }
 
     if (to_delete == -1)
@@ -651,25 +651,23 @@ void Project::remove_from_palette(Thread *thread) {
     int stitch_index;
     int texture_index;
     for (int x = 0; x < width; x++) {
-        for (int y = 0; y < width; y++) {
+        for (int y = 0; y < height; y++) {
             stitch_index = thread_data[x][y];
-            if (stitch_index < to_delete) {
-                continue;
-            } else if (stitch_index == to_delete) {
+            if (stitch_index == to_delete) {
                 thread_data[x][y] = -1;
                 texture_index = index_3d(Vector2i(x, y), width);
                 texture_data_array[texture_index] = 255;
                 texture_data_array[texture_index+1] = 255;
                 texture_data_array[texture_index+2] = 255;
                 texture_data_array[texture_index+3] = 255;
-            } else {
-                thread_data[x][y]--;
             }
         }
     }
 
     // Remove thread from palette, and delete it if it's blended
+    // TODO: probably create blended threads using shared_ptr and let *that* handle deletion
+    // palette.erase(palette.begin() + to_delete);
+    palette[to_delete] = nullptr;
     if (thread->is_blended())
-        deleted_blended_threads.push_back((BlendedThread*)thread);
-    palette.erase(palette.begin() + to_delete);
+        delete (BlendedThread*)thread;
 }

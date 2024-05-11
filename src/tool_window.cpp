@@ -44,12 +44,13 @@ void PaletteButton::palettebutton_callback() {
 void DeletePaletteButton::palettebutton_callback() {
     try {
         _app->_project->remove_from_palette(_thread);
+        _app->_canvas_renderer->upload_texture();
     } catch (std::invalid_argument& err) {
         std::cout << err.what() << std::endl;
     }
 
-    // _app->tool_window->_edit_palette_button->set_pushed(false);
-    // _app->tool_window->set_palette();
+    _app->tool_window->_edit_palette_button->set_pushed(false);
+    _app->tool_window->set_palette();
 }
 
 void ToolWindow::initialise() {
@@ -180,7 +181,7 @@ void ToolWindow::initialise() {
 
 void ToolWindow::update_remove_thread_widget() {
     if (_remove_threads_widget != nullptr)
-        remove_child(_remove_threads_widget);
+        _edit_palette_widget->remove_child(_remove_threads_widget);
 
     if (_app->_project->palette.size() == 0) {
         _remove_threads_label->set_visible(false);
@@ -194,6 +195,8 @@ void ToolWindow::update_remove_thread_widget() {
     _remove_threads_widget->set_layout(layout);
 
     for (Thread *t : _app->_project->palette) {
+        if (t == nullptr)
+            continue;
         new Label(_remove_threads_widget, t->full_name(t->default_position()));
         DisabledButton *colour_button = new DisabledButton(_remove_threads_widget, "  ");
         colour_button->set_background_color(t->color());
@@ -207,13 +210,18 @@ void ToolWindow::update_remove_thread_widget() {
 }
 
 void ToolWindow::create_themes() {
-    if (_palettebutton_black_text_theme == nullptr || _palettebutton_black_text_theme->m_standard_font_size != 16) {
+    if (_palettebutton_black_text_theme == nullptr ||
+        _palettebutton_black_text_theme->m_text_color != Color(0, 255)
+    ) {
         _palettebutton_black_text_theme = new Theme(_app->nvg_context());
         _palettebutton_black_text_theme->m_text_color = Color(0, 255);
         _palettebutton_black_text_theme->m_text_color_shadow = Color(255, 255);
     }
 
-    if (_palettebutton_white_text_theme == nullptr || _palettebutton_white_text_theme->m_standard_font_size != 16) {
+    if (
+        _palettebutton_white_text_theme == nullptr ||
+        _palettebutton_white_text_theme->m_text_color != Color(255, 255)
+    ) {
         _palettebutton_white_text_theme = new Theme(_app->nvg_context());
         _palettebutton_white_text_theme->m_text_color = Color(255, 255);
         _palettebutton_white_text_theme->m_text_color_shadow = Color(0, 255);
@@ -237,6 +245,8 @@ void ToolWindow::set_palette() {
     Widget *palette_widget = new Widget(_palette_container);
     palette_widget->set_layout(new GroupLayout(0, 5, 0, 0));
     for (Thread *t : threads) {
+        if (t == nullptr)
+            continue;
         PaletteButton *button = new PaletteButton(palette_widget);
         button->set_thread(t);
         button->set_app(m_parent);
