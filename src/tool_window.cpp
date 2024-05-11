@@ -18,31 +18,39 @@
 using namespace nanogui;
 using Anchor = AdvancedGridLayout::Anchor;
 
-const Color white = Color(255, 160);
-const Color black = Color(0, 160);
-
 void PaletteButton::palettebutton_callback() {
     _app->_selected_thread = _thread;
     _app->tool_window->update_selected_thread_widget();
     _app->_canvas_renderer->move_ghost_backstitch(_app->_canvas_renderer->_selected_sub_stitch, _thread);
 };
 
-void EditPaletteButton::palettebutton_callback() {
-    for (Thread *t : _app->_project->palette) {
-        if (t == _thread)
-            return;
-    }
-    _app->_project->palette.push_back(_thread);
-    _app->tool_window->set_palette();
-    _app->tool_window->_add_to_palette_button->set_pushed(false);
+// void EditPaletteButton::palettebutton_callback() {
+//     for (Thread *t : _app->_project->palette) {
+//         if (t == _thread)
+//             return;
+//     }
+//     _app->_project->palette.push_back(_thread);
+//     _app->tool_window->set_palette();
+//     _app->tool_window->_add_to_palette_button->set_pushed(false);
 
-    if (_app->_selected_thread == nullptr) {
-        _app->_selected_thread = _thread;
-        _app->tool_window->update_selected_thread_widget();
+//     if (_app->_selected_thread == nullptr) {
+//         _app->_selected_thread = _thread;
+//         _app->tool_window->update_selected_thread_widget();
+//     }
+
+//     _app->perform_layout();
+// };
+
+void DeletePaletteButton::palettebutton_callback() {
+    try {
+        _app->_project->remove_from_palette(_thread);
+    } catch (std::invalid_argument& err) {
+        std::cout << err.what() << std::endl;
     }
 
-    _app->perform_layout();
-};
+    // _app->tool_window->_edit_palette_button->set_pushed(false);
+    // _app->tool_window->set_palette();
+}
 
 void ToolWindow::initialise() {
     set_position(Vector2i(0, 0));
@@ -124,35 +132,79 @@ void ToolWindow::initialise() {
 
     label = new Label(this, "Palette", "sans-bold");
 
-    _add_to_palette_button = new PopupButton(this, "Add to Palette");
-    _add_to_palette_button->set_chevron_icon(0);
-    VScrollPanel *popup_scroll = new VScrollPanel(_add_to_palette_button->popup());
-    Widget *popup = new Widget(popup_scroll);
-    popup->set_layout(new BoxLayout(Orientation::Vertical, Alignment::Middle, 5, 5));
-    popup->set_fixed_height(500);
+    // _add_to_palette_button = new PopupButton(this, "Add to Palette");
+    // _add_to_palette_button->set_chevron_icon(0);
+    // VScrollPanel *popup_scroll = new VScrollPanel(_add_to_palette_button->popup());
+    // Widget *popup = new Widget(popup_scroll);
+    // popup->set_layout(new BoxLayout(Orientation::Vertical, Alignment::Middle, 5, 5));
+    // popup->set_fixed_height(500);
 
-    for (const auto & [manufacturer, man_threads] : _app->_threads) {
-        Label *popup_label = new Label(popup, manufacturer, "sans-bold");
-        Widget *man_widget = new Widget(popup);
-        man_widget->set_layout(new GridLayout(Orientation::Horizontal, 7, Alignment::Maximum, 0, 5));
+    // for (const auto & [manufacturer, man_threads] : _app->_threads) {
+    //     Label *popup_label = new Label(popup, manufacturer, "sans-bold");
+    //     Widget *man_widget = new Widget(popup);
+    //     man_widget->set_layout(new GridLayout(Orientation::Horizontal, 7, Alignment::Maximum, 0, 5));
 
-        for (const auto & [key, thread] : *man_threads) {
-            Widget *thread_widget = new Widget(man_widget);
-            thread_widget->set_layout(new BoxLayout(Orientation::Vertical, Alignment::Middle, 2, 5));
-            EditPaletteButton *popup_thread = new EditPaletteButton(thread_widget);
-            popup_thread->set_thread(thread);
-            popup_thread->set_app(_app);
-            popup_thread->set_callback();
-            popup_thread->set_background_color(thread->color());
-            popup_thread->set_tooltip(thread->description());
-            popup_label = new Label(thread_widget, thread->number());
-        }
-    }
+    //     for (const auto & [key, thread] : *man_threads) {
+    //         Widget *thread_widget = new Widget(man_widget);
+    //         thread_widget->set_layout(new BoxLayout(Orientation::Vertical, Alignment::Middle, 2, 5));
+    //         EditPaletteButton *popup_thread = new EditPaletteButton(thread_widget);
+    //         popup_thread->set_thread(thread);
+    //         popup_thread->set_app(_app);
+    //         popup_thread->set_callback();
+    //         popup_thread->set_background_color(thread->color());
+    //         popup_thread->set_tooltip(thread->description());
+    //         popup_label = new Label(thread_widget, thread->number());
+    //     }
+    // }
+
+    _edit_palette_button = new PopupButton(this, "Edit Palette");
+    _edit_palette_button->set_chevron_icon(0);
+    VScrollPanel *popup_scroll = new VScrollPanel(_edit_palette_button->popup());
+    _edit_palette_widget = new Widget(popup_scroll);
+    _edit_palette_widget->set_layout(new GroupLayout(5, 5, 10, 0));
+
+    new Label(_edit_palette_widget, "Add Thread", "sans-bold");
+    _add_thread_popup_button = new PopupButton(_edit_palette_widget, "Select Thread");
+    _add_thread_popup_button->set_chevron_icon(0);
+
+    _add_blend_thread_popup_button = new PopupButton(_edit_palette_widget, "Select Blend Thread");
+    _add_blend_thread_popup_button->set_chevron_icon(0);
+    _add_blend_thread_popup_button->set_enabled(false);
+
+    _remove_threads_label = new Label(_edit_palette_widget, "Remove Threads", "sans-bold");
+    _remove_threads_label->set_visible(false);
+    // TODO: add all current threads inside of remove_threads_widget
 
     create_themes();
-
-    // TODO: way to remove thread from palette
 };
+
+void ToolWindow::update_remove_thread_widget() {
+    if (_remove_threads_widget != nullptr)
+        remove_child(_remove_threads_widget);
+
+    if (_app->_project->palette.size() == 0) {
+        _remove_threads_label->set_visible(false);
+        _app->perform_layout();
+        return;
+    }
+
+    _remove_threads_label->set_visible(true);
+    _remove_threads_widget = new Widget(_edit_palette_widget);
+    GridLayout *layout = new GridLayout(Orientation::Horizontal, 3, Alignment::Fill, 0, 5);
+    _remove_threads_widget->set_layout(layout);
+
+    for (Thread *t : _app->_project->palette) {
+        new Label(_remove_threads_widget, t->full_name(t->default_position()));
+        DisabledButton *colour_button = new DisabledButton(_remove_threads_widget, "  ");
+        colour_button->set_background_color(t->color());
+        DeletePaletteButton *delete_button = new DeletePaletteButton(_remove_threads_widget, "Delete");
+        delete_button->set_thread(t);
+        delete_button->set_app(_app);
+        delete_button->set_callback();
+    }
+
+    _app->perform_layout();
+}
 
 void ToolWindow::create_themes() {
     if (_palettebutton_black_text_theme == nullptr || _palettebutton_black_text_theme->m_standard_font_size != 16) {
@@ -204,6 +256,8 @@ void ToolWindow::set_palette() {
         _palette_container->set_fixed_height(370);
 
     _app->perform_layout();
+
+    update_remove_thread_widget();
 };
 
 void ToolWindow::update_selected_thread_widget() {

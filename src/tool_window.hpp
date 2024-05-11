@@ -49,6 +49,21 @@ public:
     };
 };
 
+class DeletePaletteButton : public nanogui::Button {
+public:
+    DeletePaletteButton(nanogui::Widget *parent, const std::string &caption, int icon = 0) : nanogui::Button(parent, caption, icon) {};
+    void set_thread(Thread *thread) { _thread = thread; };
+    void set_app(XStitchEditorApplication *app) { _app = app; };
+    void palettebutton_callback();
+    void set_callback() {
+        m_callback = [this]() { this->palettebutton_callback(); };
+    };
+
+protected:
+    Thread *_thread;
+    XStitchEditorApplication *_app;
+};
+
 class ToolWindow : public nanogui::Window {
 public:
     ToolWindow(nanogui::Widget *parent) : _app((XStitchEditorApplication*)parent), nanogui::Window(parent, "Tools") {};
@@ -56,8 +71,10 @@ public:
     bool mouse_over(nanogui::Vector2i position);
     void set_palette();
     void update_selected_thread_widget();
+    void update_remove_thread_widget();
 
-    nanogui::PopupButton *_add_to_palette_button;
+    nanogui::PopupButton *_edit_palette_button;
+    nanogui::Widget *_edit_palette_widget;
 
 private:
     void create_themes();
@@ -72,4 +89,9 @@ private:
     nanogui::Theme *_selected_thread_theme;
     nanogui::Theme *_palettebutton_black_text_theme = nullptr;
     nanogui::Theme *_palettebutton_white_text_theme = nullptr;
+
+    nanogui::PopupButton *_add_thread_popup_button;
+    nanogui::PopupButton *_add_blend_thread_popup_button;
+    nanogui::Label *_remove_threads_label = nullptr;
+    nanogui::Widget *_remove_threads_widget = nullptr;
 };

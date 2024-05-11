@@ -3,6 +3,7 @@
 #include <map>
 #include <nanogui/nanogui.h>
 #include <fmt/core.h>
+#include <iostream>
 
 enum ThreadPosition {
     FIRST,
@@ -17,6 +18,9 @@ public:
     int B;
 
     Thread(int R, int G, int B) : R(R), G(G), B(B) {};
+    ~Thread() {
+        std::cout << "Thread destructing" << std::endl;
+    }
 
     nanogui::Color color() {
         return nanogui::Color(nanogui::Vector3i(R, G, B));

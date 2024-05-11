@@ -20,7 +20,8 @@ int index_3d(nanogui::Vector2i stitch, int width);
 bool test_intersection(nanogui::Vector2f p0, nanogui::Vector2f p1, nanogui::Vector2f p2, nanogui::Vector2f p3);
 nanogui::Vector2f* get_intersection(nanogui::Vector2f p0, nanogui::Vector2f p1, nanogui::Vector2f p2, nanogui::Vector2f p3);
 
-struct Thread;
+class Thread;
+class BlendedThread;
 class XStitchEditorApplication;
 
 struct BackStitch {
@@ -74,4 +75,9 @@ public:
     bool is_stitch_valid(nanogui::Vector2i stitch);
     // Tests if a backstitch stitch is within the range for the canvas.
     bool is_backstitch_valid(nanogui::Vector2f stitch);
+    // Removes a thread from the palette (Adjusting thread_data so that it is still correct).
+    void remove_from_palette(Thread *thread);
+
+private:
+    std::vector<BlendedThread*> deleted_blended_threads;
 };

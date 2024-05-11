@@ -240,6 +240,8 @@ Project::~Project() {
 
         delete (BlendedThread*)t;
     }
+    for (BlendedThread *t : deleted_blended_threads)
+        delete t;
 }
 
 void Project::draw_stitch(Vector2i stitch, Thread *thread) {
@@ -633,4 +635,41 @@ bool Project::is_stitch_valid(Vector2i stitch) {
 bool Project::is_backstitch_valid(Vector2f stitch) {
     return stitch[0] >= 0.f && stitch[0] <= (float)width &&
            stitch[1] >= 0.f && stitch[1] <= (float)height;
+}
+
+void Project::remove_from_palette(Thread *thread) {
+    int to_delete = -1;
+    for (int i = 0; i < palette.size(); i++) {
+        if (palette[i] == thread)
+            to_delete = i;
+    }
+
+    if (to_delete == -1)
+        throw std::invalid_argument("The thread provided is not in this project's palette");
+
+    // Update thread_data and texture_data_array
+    int stitch_index;
+    int texture_index;
+    for (int x = 0; x < width; x++) {
+        for (int y = 0; y < width; y++) {
+            stitch_index = thread_data[x][y];
+            if (stitch_index < to_delete) {
+                continue;
+            } else if (stitch_index == to_delete) {
+                thread_data[x][y] = -1;
+                texture_index = index_3d(Vector2i(x, y), width);
+                texture_data_array[texture_index] = 255;
+                texture_data_array[texture_index+1] = 255;
+                texture_data_array[texture_index+2] = 255;
+                texture_data_array[texture_index+3] = 255;
+            } else {
+                thread_data[x][y]--;
+            }
+        }
+    }
+
+    // Remove thread from palette, and delete it if it's blended
+    if (thread->is_blended())
+        deleted_blended_threads.push_back((BlendedThread*)thread);
+    palette.erase(palette.begin() + to_delete);
 }
