@@ -18,9 +18,6 @@ public:
     int B;
 
     Thread(int R, int G, int B) : R(R), G(G), B(B) {};
-    ~Thread() {
-        std::cout << "Thread destructing" << std::endl;
-    }
 
     nanogui::Color color() {
         return nanogui::Color(nanogui::Vector3i(R, G, B));
@@ -116,13 +113,18 @@ public:
     virtual std::string full_name(ThreadPosition position) {
         switch (position) {
             case ThreadPosition::FIRST: return thread_1->full_name(ThreadPosition::FIRST);
-            case ThreadPosition::SECOND: return thread_2->full_name(ThreadPosition::SECOND);
+            case ThreadPosition::SECOND: return thread_2->full_name(ThreadPosition::FIRST);
             case ThreadPosition::BOTH:
-                return fmt::format("{} / {}", thread_1->full_name(ThreadPosition::FIRST), thread_2->full_name(ThreadPosition::SECOND));
+                return fmt::format("{} / {}", thread_1->full_name(ThreadPosition::FIRST), thread_2->full_name(ThreadPosition::FIRST));
         }
     }
 
     virtual bool is_blended() { return true; };
+
+    bool operator==(const BlendedThread& t) {
+        return (thread_1 == t.thread_1 && thread_2 == t.thread_2) ||
+               (thread_1 == t.thread_2 && thread_2 == t.thread_1);
+    }
 };
 
 BlendedThread create_blended_thread(SingleThread *thread_1, SingleThread *thread_2);

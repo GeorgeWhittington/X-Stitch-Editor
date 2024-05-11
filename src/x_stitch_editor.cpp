@@ -106,7 +106,7 @@ void XStitchEditorApplication::switch_project(Project *project) {
     if (project != nullptr) {
         _project = project;
         _canvas_renderer->update_all_buffers();
-        tool_window->set_palette();
+        tool_window->update_palette_widget();
     }
 }
 

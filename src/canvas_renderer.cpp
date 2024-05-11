@@ -296,6 +296,7 @@ void CanvasRenderer::update_backstitch_buffers() {
 
         // colour for all vertices
         Thread *t = _app->_project->palette[bs.palette_index];
+        assert(t != nullptr);
         Color c = t->color();
         for (int i = 0; i < total_verts_per_segment; i++) {
             backstitch_colours.push_back(c.r());

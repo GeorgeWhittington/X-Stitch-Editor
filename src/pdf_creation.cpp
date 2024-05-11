@@ -192,6 +192,9 @@ void PDFWizard::create_title_page() {
 }
 
 void PDFWizard::create_symbol_key_page() {
+    // TODO: blended thread descriptions easily go off-page
+    // need to either implement multi-line rendering or get rid of description
+    // column (it's not totally necessary)
     PDFPage *page = new PDFPage();
     page->SetMediaBox(PDFRectangle(0, 0, A4_WIDTH, A4_HEIGHT));
     PageContentContext *page_content_ctx = _pdf_writer.StartPageContentContext(page);
@@ -246,6 +249,7 @@ void PDFWizard::create_symbol_key_page() {
     page_content_ctx->J(FT_Stroker_LineCap_::FT_STROKER_LINECAP_ROUND); // set end cap
     nanogui::Color c;
 
+    // TODO: render blended threads as two triangles
     for (TableRow *row : _symbol_key_rows) {
         c = _project->palette[row->palette_id]->color();
         if (row->no_stitches != 0) {
@@ -511,7 +515,6 @@ void PDFWizard::draw_chart(PageContentContext *ctx, PatternPageContext p_ctx, bo
                 if (palette_index == -1)
                     continue;
 
-                // TODO: render blended threads as two triangles
                 if (_settings->render_in_colour) {
                     nanogui::Color c = _project->palette[palette_index]->color();
                     ctx->rg(c.r(), c.g(), c.b()); // set fill colour
@@ -625,8 +628,11 @@ void PDFWizard::save_page(PDFPage *page, PageContentContext *page_content_ctx, f
 }
 
 void PDFWizard::fetch_symbol_data() {
-    for (int i = 0; i < _project->palette.size(); i ++) {
+    for (int i = 0; i < _project->palette.size(); i++) {
         Thread *t = _project->palette[i];
+        if (t == nullptr)
+            continue;
+
         _symbol_key_rows.push_back(new TableRow{
             i, t->full_name(t->default_position()),
             t->description(t->default_position()), t->is_blended()
@@ -640,13 +646,22 @@ void PDFWizard::fetch_symbol_data() {
             if (palette_id == -1)
                 continue;
 
-            _symbol_key_rows[palette_id]->no_stitches++;
+            for (TableRow *row : _symbol_key_rows) {
+                if (row->palette_id == palette_id) {
+                    row->no_stitches++;
+                    break;
+                }
+            }
         }
     }
 
     // Find backstitch count for each colour
     for (BackStitch bs : _project->backstitches) {
-        _symbol_key_rows[bs.palette_index]->no_backstitches++;
+        for (TableRow *row : _symbol_key_rows) {
+            if (row->palette_id == bs.palette_index) {
+                row->no_backstitches++;
+            }
+        }
     }
 
     // Remove palette items with no stitches

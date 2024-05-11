@@ -20,7 +20,7 @@ std::string retrieve_string_attribute(tinyxml2::XMLElement *element, const char 
     const char *string_attr;
     tinyxml2::XMLError err = element->QueryStringAttribute(key, &string_attr);
     if (err != tinyxml2::XML_SUCCESS)
-        throw std::runtime_error("Error parsing file");
+        throw std::runtime_error("Error parsing file, string attribute could not be read");
 
     return string_attr;
 }
@@ -29,7 +29,7 @@ int retrieve_int_attribute(tinyxml2::XMLElement *element, const char *key) {
     int int_attr;
     tinyxml2::XMLError err = element->QueryIntAttribute(key, &int_attr);
     if (err != tinyxml2::XML_SUCCESS)
-        throw std::runtime_error("Error parsing file");
+        throw std::runtime_error("Error parsing file, integer attribute could not be read");
 
     return int_attr;
 }
@@ -38,7 +38,7 @@ float retrieve_float_attribute(tinyxml2::XMLElement *element, const char *key) {
     float float_attr;
     tinyxml2::XMLError err = element->QueryFloatAttribute(key, &float_attr);
     if (err != tinyxml2::XML_SUCCESS)
-        throw std::runtime_error("Error parsing file");
+        throw std::runtime_error("Error parsing file, float attribute could not be read");
 
     return float_attr;
 }
@@ -129,7 +129,12 @@ Project::Project(const char *project_path, std::map<std::string, std::map<std::s
     for (int i = 0; i < palette_length; i++) {
         palette_item = palette_item->NextSiblingElement("palette_item");
         std::string thread_str = retrieve_string_attribute(palette_item, "number");
-        std::string blended_str = retrieve_string_attribute(palette_item, "blendcolor");
+        std::string blended_str;
+        try {
+            blended_str = retrieve_string_attribute(palette_item, "blendcolor");
+        } catch (std::runtime_error) {
+            blended_str = "nil";
+        }
 
         std::smatch matches;
         match = std::regex_match(thread_str, matches, thread_regex, std::regex_constants::match_default);
@@ -235,7 +240,7 @@ Project::Project(const char *project_path, std::map<std::string, std::map<std::s
 Project::~Project() {
     // Any blended threads need to be deleted
     for (Thread *t : palette) {
-        if (!t->is_blended())
+        if (t == nullptr || !t->is_blended())
             continue;
 
         delete (BlendedThread*)t;
@@ -516,11 +521,10 @@ Thread* Project::find_thread_at_stitch(Vector2i stitch) {
         return nullptr;
 
     try {
-        Thread *t = palette.at(palette_id);
-        return t;
+        return palette.at(palette_id);
     } catch (std::out_of_range&) {
         // this shouldn't happen, but to be safe clear the stitch
-        // that contains a thread we don't know
+        // that contains a thread we don't recognise
         erase_stitch(stitch);
         return nullptr;
     }
@@ -552,6 +556,11 @@ void Project::save(const char *filepath, XStitchEditorApplication *app) {
     format_element->SetAttribute("comments12", "The properties, fullstitches, and backstitches elements should be considered mandatory, even if empty");
     format_element->SetAttribute("comments13", "element and attribute names are always lowercase");
 
+    int palette_count = 0;
+    for (Thread *t : palette)
+        if (t != nullptr)
+            palette_count++;
+
     XMLElement *properties_element = chart_element->InsertNewChildElement("properties");
     properties_element->SetAttribute("oxsversion", 1.f);
     properties_element->SetAttribute("software", "X Stitch Editor");
@@ -561,7 +570,7 @@ void Project::save(const char *filepath, XStitchEditorApplication *app) {
     properties_element->SetAttribute("charttitle", title.c_str());
     properties_element->SetAttribute("author", "");
     properties_element->SetAttribute("copyright", "");
-    properties_element->SetAttribute("palettecount", (int)palette.size());
+    properties_element->SetAttribute("palettecount", palette_count);
 
     XMLElement *palette_element = chart_element->InsertNewChildElement("palette");
 
@@ -574,21 +583,53 @@ void Project::save(const char *filepath, XStitchEditorApplication *app) {
         color_float_to_int(bg_color.g()),
         color_float_to_int(bg_color.b())).c_str());
 
+    int skipped_palette_entries = 0;
+    std::vector<Thread*> normalised_palette;
+    std::vector<BackStitch> normalised_backstitches = backstitches;
+    auto normalised_thread_data = std::vector<std::vector<int>> (width, std::vector<int> (height, -1));
+
     for (int i = 0; i < palette.size(); i++) {
+        Thread *t = palette[i];
+        if (t == nullptr) {
+            skipped_palette_entries++;
+            continue;
+        }
+
+        normalised_palette.push_back(t);
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                int palette_index = thread_data[x][y];
+                if (palette_index == -1 || palette_index != i)
+                    continue;
+
+                normalised_thread_data[x][y] = palette_index - skipped_palette_entries;
+            }
+        }
+        for (BackStitch& bs : normalised_backstitches) {
+            if (bs.palette_index != i || skipped_palette_entries == 0)
+                continue;
+
+            bs.palette_index = bs.palette_index - skipped_palette_entries;
+        }
+    }
+
+
+    for (int i = 0; i < normalised_palette.size(); i++) {
+        Thread *t = normalised_palette[i];
         palette_item_element = palette_element->InsertNewChildElement("palette_item");
         palette_item_element->SetAttribute("index", i + 1);
-        palette_item_element->SetAttribute("number", palette[i]->full_name(ThreadPosition::FIRST).c_str());
-        palette_item_element->SetAttribute("name", palette[i]->description(palette[i]->default_position()).c_str());
-        if (palette[i]->is_blended()) {
-            BlendedThread *t = (BlendedThread*)(palette[i]);
+        palette_item_element->SetAttribute("number", t->full_name(ThreadPosition::FIRST).c_str());
+        palette_item_element->SetAttribute("name", t->description(t->default_position()).c_str());
+        if (t->is_blended()) {
+            BlendedThread *bt = (BlendedThread*)t;
 
-            palette_item_element->SetAttribute("blendnumber", t->full_name(ThreadPosition::FIRST).c_str());
+            palette_item_element->SetAttribute("blendnumber", bt->full_name(ThreadPosition::SECOND).c_str());
             palette_item_element->SetAttribute("color", fmt::format(
-                "{:02x}{:02x}{:02x}", t->thread_1->R, t->thread_1->G, t->thread_1->B).c_str());
+                "{:02x}{:02x}{:02x}", bt->thread_1->R, bt->thread_1->G, bt->thread_1->B).c_str());
             palette_item_element->SetAttribute("blendcolor", fmt::format(
-                "{:02x}{:02x}{:02x}", t->thread_2->R, t->thread_2->G, t->thread_2->B).c_str());
+                "{:02x}{:02x}{:02x}", bt->thread_2->R, bt->thread_2->G, bt->thread_2->B).c_str());
         } else {
-            palette_item_element->SetAttribute("color", fmt::format("{:02x}{:02x}{:02x}", palette[i]->R, palette[i]->G, palette[i]->B).c_str());
+            palette_item_element->SetAttribute("color", fmt::format("{:02x}{:02x}{:02x}", t->R, t->G, t->B).c_str());
         }
     }
 
@@ -597,7 +638,7 @@ void Project::save(const char *filepath, XStitchEditorApplication *app) {
 
     for (int x = 0; x < width; x++) {
         for (int y = 0; y < height; y++) {
-            int palette_index = thread_data[x][y];
+            int palette_index = normalised_thread_data[x][y];
             if (palette_index == -1)
                 continue; // blank stitch
 
@@ -612,7 +653,7 @@ void Project::save(const char *filepath, XStitchEditorApplication *app) {
     XMLElement *backstitch_element;
 
     collate_backstitches();
-    for (BackStitch bs : backstitches) {
+    for (BackStitch bs : normalised_backstitches) {
         backstitch_element = back_stitches_element->InsertNewChildElement("backstitch");
         backstitch_element->SetAttribute("x1", bs.start[0]);
         backstitch_element->SetAttribute("y1", (float)height - bs.start[1] + 1);
@@ -664,9 +705,17 @@ void Project::remove_from_palette(Thread *thread) {
         }
     }
 
+    // Update backstitches
+    std::vector<BackStitch> new_backstitches;
+
+    for (BackStitch bs : backstitches)
+        if (bs.palette_index != to_delete)
+            new_backstitches.push_back(bs);
+
+    backstitches = new_backstitches;
+
     // Remove thread from palette, and delete it if it's blended
     // TODO: probably create blended threads using shared_ptr and let *that* handle deletion
-    // palette.erase(palette.begin() + to_delete);
     palette[to_delete] = nullptr;
     if (thread->is_blended())
         delete (BlendedThread*)thread;

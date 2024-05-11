@@ -40,13 +40,17 @@ protected:
     XStitchEditorApplication *_app;
 };
 
-class EditPaletteButton : public PaletteButton {
+class AddToPaletteButton : public PaletteButton {
 public:
-    EditPaletteButton(nanogui::Widget *parent, const std::string &caption = "  ", int icon = 0) : PaletteButton(parent, caption, icon) {};
+    AddToPaletteButton(nanogui::Widget *parent, const std::string &caption = "  ", int icon = 0) : PaletteButton(parent, caption, icon) {};
     void palettebutton_callback();
+    void set_popup_button(nanogui::PopupButton *button) { _button = button; };
     void set_callback() {
         m_callback = [this]() { this->palettebutton_callback(); };
     };
+
+private:
+    nanogui::PopupButton *_button;
 };
 
 class DeletePaletteButton : public nanogui::Button {
@@ -69,15 +73,26 @@ public:
     ToolWindow(nanogui::Widget *parent) : _app((XStitchEditorApplication*)parent), nanogui::Window(parent, "Tools") {};
     void initialise();
     bool mouse_over(nanogui::Vector2i position);
-    void set_palette();
+    void update_palette_widget();
     void update_selected_thread_widget();
     void update_remove_thread_widget();
+    void update_thread_list_popups(nanogui::PopupButton *add_thread_btn);
+    void create_themes();
+    void reset_add_thread_form();
 
     nanogui::PopupButton *_edit_palette_button;
     nanogui::Widget *_edit_palette_widget;
+    nanogui::Theme *_palettebutton_black_text_theme = nullptr;
+    nanogui::Theme *_palettebutton_white_text_theme = nullptr;
+    nanogui::PopupButton *_add_thread_popup_button;
+    nanogui::PopupButton *_add_blend_thread_popup_button;
+    nanogui::Button *_clear_threads_button;
+    nanogui::Button *_add_thread_button;
+
+    SingleThread *_selected_thread = nullptr;
+    SingleThread *_selected_blend_thread = nullptr;
 
 private:
-    void create_themes();
     void zoom_in();
     void zoom_out();
 
@@ -87,11 +102,7 @@ private:
     nanogui::Label *_selected_thread_label;
     nanogui::VScrollPanel *_palette_container;
     nanogui::Theme *_selected_thread_theme;
-    nanogui::Theme *_palettebutton_black_text_theme = nullptr;
-    nanogui::Theme *_palettebutton_white_text_theme = nullptr;
 
-    nanogui::PopupButton *_add_thread_popup_button;
-    nanogui::PopupButton *_add_blend_thread_popup_button;
     nanogui::Label *_remove_threads_label = nullptr;
     nanogui::Widget *_remove_threads_widget = nullptr;
 };
