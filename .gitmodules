@@ -13,3 +13,6 @@
 [submodule "third_party/PDF-Writer"]
 	path = third_party/PDF-Writer
 	url = https://github.com/galkahana/PDF-Writer.git
+[submodule "third_party/dkm"]
+	path = third_party/dkm
+	url = https://github.com/genbattle/dkm.git

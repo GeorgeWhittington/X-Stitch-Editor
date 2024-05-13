@@ -197,11 +197,8 @@ void ToolWindow::initialise() {
                 BlendedThread *t1 = (BlendedThread*)t;
                 BlendedThread *t2 = (BlendedThread*)pt;
 
-                if ((t1->thread_1 == t2->thread_1 && t1->thread_2 == t2->thread_2) ||
-                    (t1->thread_1 == t2->thread_2 && t1->thread_2 == t2->thread_1))
-                {
+                if (is_duplicate(t1, t2))
                     thread_exists = true;
-                }
             } else if (t == pt) {
                 thread_exists = true;
             }
@@ -306,15 +303,36 @@ void ToolWindow::update_remove_thread_widget() {
     }
 
     _remove_threads_widget = new Widget(_remove_from_palette_widget);
-    GridLayout *layout = new GridLayout(Orientation::Horizontal, 3, Alignment::Fill, 0, 5);
+    GridLayout *layout = new GridLayout(Orientation::Horizontal, 3, Alignment::Middle, 0, 5);
+    // layout->set_col_alignment(Alignment::Fill);
+    // layout->set_row_alignment(Alignment::Middle);
     _remove_threads_widget->set_layout(layout);
+
+    // at two rows the spacing is calculated wrong and cuts into the widgets
+    // manually set the height so this can't happen
+    if (palette_entries == 2) {
+        _remove_threads_widget->set_fixed_height(70);
+    }
 
     for (Thread *t : _app->_project->palette) {
         if (t == nullptr)
             continue;
+
         new Label(_remove_threads_widget, t->full_name(t->default_position()));
-        DisabledButton *colour_button = new DisabledButton(_remove_threads_widget, "  ");
-        colour_button->set_background_color(t->color());
+
+        if (t->is_blended()) {
+            BlendedThread *bt = (BlendedThread*)t;
+            Widget *colour_widget = new Widget(_remove_threads_widget);
+            colour_widget->set_layout(new BoxLayout(Orientation::Horizontal, Alignment::Middle, 0, 5));
+            DisabledButton *colour_button = new DisabledButton(colour_widget, "  ");
+            colour_button->set_background_color(bt->thread_1->color());
+            DisabledButton *colour_button_2 = new DisabledButton(colour_widget, "  ");
+            colour_button_2->set_background_color(bt->thread_2->color());
+        } else {
+            DisabledButton *colour_button = new DisabledButton(_remove_threads_widget, "  ");
+            colour_button->set_background_color(t->color());
+        }
+
         DeletePaletteButton *delete_button = new DeletePaletteButton(_remove_threads_widget, "Delete");
         delete_button->set_thread(t);
         delete_button->set_app(_app);

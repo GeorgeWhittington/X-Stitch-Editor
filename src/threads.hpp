@@ -120,12 +120,9 @@ public:
     }
 
     virtual bool is_blended() { return true; };
-
-    bool operator==(const BlendedThread& t) {
-        return (thread_1 == t.thread_1 && thread_2 == t.thread_2) ||
-               (thread_1 == t.thread_2 && thread_2 == t.thread_1);
-    }
 };
+
+bool is_duplicate(BlendedThread *t1, BlendedThread *t2);
 
 BlendedThread create_blended_thread(SingleThread *thread_1, SingleThread *thread_2);
 

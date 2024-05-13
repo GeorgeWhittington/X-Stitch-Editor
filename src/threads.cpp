@@ -9,11 +9,17 @@
 #include <tinyxml2.h>
 #include <fmt/core.h>
 
+bool is_duplicate(BlendedThread *t1, BlendedThread *t2) {
+    return (t1->thread_1 == t2->thread_1 && t1->thread_2 == t2->thread_2) ||
+           (t1->thread_1 == t2->thread_2 && t1->thread_2 == t2->thread_1);
+}
+
+// A simple average will give incorrect results, per: https://stackoverflow.com/a/29576746
 BlendedThread create_blended_thread(SingleThread *thread_1, SingleThread *thread_2) {
-    int R = (thread_1->R + thread_2->R) / 2;
-    int G = (thread_1->G + thread_2->G) / 2;
-    int B = (thread_1->B + thread_2->B) / 2;
-    return BlendedThread(thread_1, thread_2, R, G, B);
+    int R = ((thread_1->R * thread_1->R) + (thread_2->R * thread_2->R)) / 2;
+    int G = ((thread_1->G * thread_1->G) + (thread_2->G * thread_2->G)) / 2;
+    int B = ((thread_1->B * thread_1->B) + (thread_2->B * thread_2->B)) / 2;
+    return BlendedThread(thread_1, thread_2, sqrt(R), sqrt(G), sqrt(B));
 }
 
 std::string load_manufacturer(const char *file_path, std::map<std::string, Thread*> *map) {

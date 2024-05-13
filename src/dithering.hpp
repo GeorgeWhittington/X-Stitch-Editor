@@ -35,31 +35,36 @@ struct RGBcolour {
 
 class DitheringAlgorithm {
 public:
-    DitheringAlgorithm(std::vector<Thread*> *palette, int max_threads = INT_MAX) : _palette(palette) {
+    DitheringAlgorithm(std::vector<Thread*> *palette, int max_threads = INT_MAX, bool blend_threads = false)
+    : _palette(palette), _blend_threads(blend_threads)
+    {
         _max_threads = max_threads <= 0 ? 1 : max_threads;
     };
 
     // Finds the nearest colour from the available palette using a euclidian distance calculation
     // which is optimised using an internal cache
-    Thread* find_nearest_neighbour(RGBcolour colour);
+    Thread* find_nearest_neighbour(RGBcolour colour, std::vector<Thread*> *palette);
 
 protected:
     int _max_threads;
+    std::vector<Thread*> *_palette = nullptr;
+    bool _blend_threads;
 
     void set_palette(std::vector<Thread*> *new_palette);
-    void reduce_palette(int width, int height, Project *project, std::vector<Thread*> *new_palette);
+    void reduce_palette(unsigned char *image, int width, int height, std::vector<Thread*> *new_palette, bool median_cut_floor = false);
     void draw_stitch(int x, int y, int height, Thread *new_pixel, Project *project);
+    void expand_palette(std::vector<Thread*> *new_palette);
 
 private:
     std::map<RGBcolour, Thread*> _nearest_cache;
-    std::vector<Thread*> *_palette = nullptr;
 
-    void median_cut(std::vector<Thread*> *image_arr, int depth, std::vector<Thread*> *new_palette);
+    void median_cut(std::vector<RGBcolour> *image, int depth, std::vector<RGBcolour> *points);
+    void create_closest_palette(std::vector<RGBcolour> CIELuv_averages, std::vector<Thread*> *new_palette);
 };
 
 class FloydSteinburg : DitheringAlgorithm {
 public:
-    FloydSteinburg(std::vector<Thread*> *palette, int max_threads = INT_MAX) : DitheringAlgorithm(palette, max_threads) {};
+    FloydSteinburg(std::vector<Thread*> *palette, int max_threads = INT_MAX, bool blend_threads = false) : DitheringAlgorithm(palette, max_threads, blend_threads) {};
 
     void dither(unsigned char *image, int width, int height, Project *project);
 
@@ -70,7 +75,7 @@ private:
 template <uint ORDER = 4U>
 class Bayer : DitheringAlgorithm {
 public:
-    Bayer(std::vector<Thread*> *palette, int max_threads = INT_MAX) : DitheringAlgorithm(palette, max_threads) {
+    Bayer(std::vector<Thread*> *palette, int max_threads = INT_MAX, bool blend_threads = false) : DitheringAlgorithm(palette, max_threads, blend_threads) {
         int BAYER2x2[2][2] = {
             {0, 2},
             {3, 1}
@@ -154,6 +159,16 @@ private:
 
 template<uint ORDER>
 void Bayer<ORDER>::dither(unsigned char *image, int width, int height, Project *project) {
+    std::vector<Thread*> new_palette;
+    if (_palette->size() > _max_threads) {
+        reduce_palette(image, width, height, &new_palette);
+    }
+
+    std::vector<Thread*> new_new_palette;
+    if (_blend_threads) {
+        expand_palette(&new_new_palette);
+    }
+
     int i, row, factor;
     for (int y = 0; y < height; y++) {
         row = y & ORDER - 1;
@@ -170,22 +185,16 @@ void Bayer<ORDER>::dither(unsigned char *image, int width, int height, Project *
             factor = _matrix[x & ORDER - 1][row];
             Thread *new_pixel = find_nearest_neighbour(RGBcolour{
                 std::clamp(image[i] + factor, 0, 255), std::clamp(image[i+1] + factor, 0, 255), std::clamp(image[i+2] + factor, 0, 255)
-            });
+            }, nullptr);
 
             draw_stitch(x, y, height, new_pixel, project);
         }
-    }
-
-    if (project->palette.size() > _max_threads) {
-        std::vector<Thread*> new_palette;
-        reduce_palette(width, height, project, &new_palette);
-        dither(image, width, height, project);
     }
 }
 
 class NoDither : DitheringAlgorithm {
 public:
-    NoDither(std::vector<Thread*> *palette, int max_threads = INT_MAX) : DitheringAlgorithm(palette, max_threads) {};
+    NoDither(std::vector<Thread*> *palette, int max_threads = INT_MAX, bool blend_threads = false) : DitheringAlgorithm(palette, max_threads, blend_threads) {};
 
     void dither(unsigned char *image, int width, int height, Project *project);
 };

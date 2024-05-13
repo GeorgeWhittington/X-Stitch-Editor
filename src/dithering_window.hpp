@@ -32,6 +32,7 @@ private:
     nanogui::Widget *_matrix_size_widget;
     nanogui::ComboBox *_matrix_size_combobox;
     std::vector<nanogui::CheckBox*> _palette_checkboxes;
+    nanogui::CheckBox *_enable_thread_blending_checkbox;
     nanogui::CheckBox *_enable_max_threads_checkbox;
     nanogui::Label *_max_threads_label;
     nanogui::IntBox<int> *_max_threads_intbox;

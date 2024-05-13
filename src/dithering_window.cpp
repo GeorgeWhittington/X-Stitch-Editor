@@ -141,6 +141,10 @@ void DitheringWindow::initialise() {
     // (Do this automatically, test the colours, see: https://austinpray.com/2020/05/25/detecting-grayscale-colors.html
     // for if I want to be smart about and not just check R = G = B)
 
+    // ENABLE THREAD BLENDING
+    new Label(form_widget, "Enable thread blending:");
+    _enable_thread_blending_checkbox = new CheckBox(form_widget, "");
+
     // ENABLE MAX THREADS
     new Label(form_widget, "Enable setting a maximum NO threads:");
     _enable_max_threads_checkbox = new CheckBox(form_widget, "");
@@ -195,6 +199,7 @@ void DitheringWindow::reset_form() {
         cb->set_checked(i == 0); // only check first item
     }
 
+    _enable_thread_blending_checkbox->set_checked(false);
     _enable_max_threads_checkbox->set_checked(false);
     _max_threads_label->set_visible(false);
     _max_threads_intbox->set_visible(false);
@@ -311,21 +316,21 @@ void DitheringWindow::create_pattern() {
 
     int selected_algorithm = _algorithm_combobox->selected_index();
     if (selected_algorithm == DitheringAlgorithms::FLOYD_STEINBURG) {
-        FloydSteinburg floyd_steinburg(&palette, max_threads);
+        FloydSteinburg floyd_steinburg(&palette, max_threads, _enable_thread_blending_checkbox->checked());
         floyd_steinburg.dither(_image, _width, _height, project);
     } else if (selected_algorithm == DitheringAlgorithms::BAYER) {
         int selected_matrix = _matrix_size_combobox->selected_index();
         if (selected_matrix == 0) {
-            Bayer<BayerOrders::TWO> bayer(&palette, max_threads);
+            Bayer<BayerOrders::TWO> bayer(&palette, max_threads, _enable_thread_blending_checkbox->checked());
             bayer.dither(_image, _width, _height, project);
         } else if (selected_matrix == 1) {
-            Bayer<BayerOrders::FOUR> bayer(&palette, max_threads);
+            Bayer<BayerOrders::FOUR> bayer(&palette, max_threads, _enable_thread_blending_checkbox->checked());
             bayer.dither(_image, _width, _height, project);
         } else if (selected_matrix == 2) {
-            Bayer<BayerOrders::EIGHT> bayer(&palette, max_threads);
+            Bayer<BayerOrders::EIGHT> bayer(&palette, max_threads, _enable_thread_blending_checkbox->checked());
             bayer.dither(_image, _width, _height, project);
         } else if (selected_matrix == 3) {
-            Bayer<BayerOrders::SIXTEEN> bayer(&palette, max_threads);
+            Bayer<BayerOrders::SIXTEEN> bayer(&palette, max_threads, _enable_thread_blending_checkbox->checked());
             bayer.dither(_image, _width, _height, project);
         } else {
             delete project;
@@ -335,7 +340,7 @@ void DitheringWindow::create_pattern() {
             return;
         }
     } else if (selected_algorithm == DitheringAlgorithms::QUANTISE) {
-        NoDither no_dither(&palette, max_threads);
+        NoDither no_dither(&palette, max_threads, _enable_thread_blending_checkbox->checked());
         no_dither.dither(_image, _width, _height, project);
     } else {
         delete project;
