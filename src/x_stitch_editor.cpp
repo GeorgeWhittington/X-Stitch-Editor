@@ -84,7 +84,11 @@ void XStitchEditorApplication::load_all_threads() {
 
     std::map<std::string, Thread*> *dmc_threads = new std::map<std::string, Thread*>;
     try {
-        std::string manufacturer_name = load_manufacturer("/Users/george/Documents/uni_year_three/Digital Systems Project/X-Stitch-Editor/assets/DMC.xml", dmc_threads);
+        std::string resources_dir = get_resources_dir();
+        if (resources_dir == "")
+            throw std::runtime_error("Couldn't fetch resource directory");
+        std::string path = resources_dir + "/DMC.xml";
+        std::string manufacturer_name = load_manufacturer(path.c_str(), dmc_threads);
         _threads[manufacturer_name] = dmc_threads;
     } catch (std::runtime_error& err) {
         delete dmc_threads;

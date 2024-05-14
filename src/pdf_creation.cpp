@@ -7,6 +7,7 @@
 #include <fmt/core.h>
 #include <ctime>
 #include <limits>
+#include "constants.hpp"
 
 using nanogui::Vector2f;
 
@@ -24,7 +25,6 @@ const int CHART_STITCHES_Y = CHART_HEIGHT / CHART_STITCH_WIDTH;
 
 const std::string symbol_key_headers[4] = {"Symbol", "Number", "Stitches", "Backstitches"};
 
-const std::string symbol_dir = "/Users/george/Documents/uni_year_three/Digital Systems Project/X-Stitch-Editor/assets/symbols/";
 const int MAX_SYMBOLS = 84;
 const std::string symbols[MAX_SYMBOLS] = {
     "air", "aircraft", "arrow-down", "arrow-left", "arrow-up",
@@ -69,16 +69,17 @@ void draw_line(PageContentContext *ctx, float x1, float y1, float x2, float y2) 
 PDFWizard::PDFWizard(Project *project, PDFSettings *settings) : _project(project), _settings(settings) {};
 
 void PDFWizard::create_and_save_pdf(std::string path) {
-    if (_pdf_writer.StartPDF(
-        path, ePDFVersion13,
-        LogConfiguration(true, true, "/Users/george/Documents/uni_year_three/Digital Systems Project/X-Stitch-Editor/assets/pdf-debug.txt")
-    ) != eSuccess)
+    if (_pdf_writer.StartPDF(path, ePDFVersion13) != eSuccess)
         throw std::runtime_error("Error creating PDFWriter");
 
-    _helvetica = _pdf_writer.GetFontForFile("/Users/george/Documents/uni_year_three/Digital Systems Project/X-Stitch-Editor/assets/Helvetica.ttf");
+    std::string resources_dir = get_resources_dir();
+    if (resources_dir == "")
+        throw std::runtime_error("Couldn't fetch resource directory");
+
+    _helvetica = _pdf_writer.GetFontForFile(resources_dir + "/Helvetica.ttf");
     if (!_helvetica)
         throw std::runtime_error("Error loading font Helvetica for PDF generation");
-    _helvetica_bold = _pdf_writer.GetFontForFile("/Users/george/Documents/uni_year_three/Digital Systems Project/X-Stitch-Editor/assets/Helvetica-Bold.ttf");
+    _helvetica_bold = _pdf_writer.GetFontForFile(resources_dir + "/Helvetica-Bold.ttf");
     if (!_helvetica_bold)
         throw std::runtime_error("Error loading font Helvetica-Bold for PDF generation");
 
@@ -714,9 +715,12 @@ void PDFWizard::fetch_symbol_data() {
     for (auto rit = to_delete.rbegin(); rit != to_delete.rend(); rit++)
         _symbol_key_rows.erase(_symbol_key_rows.begin() + *rit);
 
-    if (_symbol_key_rows.size() > MAX_SYMBOLS) {
+    if (_symbol_key_rows.size() > MAX_SYMBOLS)
         throw std::runtime_error("The project palette is too large for the number of symbols available.");
-    }
+
+    std::string resources_dir = get_resources_dir();
+    if (resources_dir == "")
+        throw std::runtime_error("Couldn't fetch resource directory");
 
     // Load all symbols
     int i = 0;
@@ -730,7 +734,7 @@ void PDFWizard::fetch_symbol_data() {
                     tint = "-white.png";
             }
 
-            _project_symbols[row->palette_id] = symbol_dir + symbols[i] + tint;
+            _project_symbols[row->palette_id] = resources_dir + "/symbols/" + symbols[i] + tint;
             i++;
         }
     }
