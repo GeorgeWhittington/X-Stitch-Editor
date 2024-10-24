@@ -2,6 +2,8 @@
 
 A Cross Stitch pattern editor built with nanogui.
 
+![screenshot of X-Stitch-Editor running](https://github.com/user-attachments/assets/69e03dfc-6125-4015-9dc0-0a253fc731d0)
+
 ## Running instructions
 
 Install Cmake, and any build tools you need on your system to compile c++. Create a folder inside the root directory called build, and cd into it. Run the commands:
